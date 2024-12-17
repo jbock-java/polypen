@@ -1,0 +1,118 @@
+plugins {
+    id('java-library')
+    id('maven-publish')
+    id('signing')
+}
+
+group = 'io.github.jbock-java'
+
+compileJava {
+    options.encoding = 'UTF-8'
+    sourceCompatibility = '17'
+    targetCompatibility = '17'
+    options.compilerArgs << '--release'
+    options.compilerArgs << '17'
+}
+
+repositories {
+    mavenCentral()
+}
+
+tasks.withType(AbstractArchiveTask).configureEach {
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+}
+
+tasks.withType(GenerateModuleMetadata).configureEach {
+    enabled = true
+}
+
+dependencies {
+    implementation 'org.apache.commons:commons-numbers-fraction:1.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.0'
+}
+
+jar {
+    manifest {
+        attributes(
+                'Implementation-Version': project.properties['version']
+        )
+    }
+}
+
+test {
+    useJUnitPlatform()
+    testLogging {
+        events('failed')
+    }
+}
+
+tasks.register('javadocJar', Jar) {
+    from javadoc
+    archiveClassifier.set('javadoc')
+}
+
+tasks.register('sourcesJar', Jar) {
+    from sourceSets.main.allJava
+    archiveClassifier.set('sources')
+}
+
+artifacts {
+    archives(javadocJar, sourcesJar)
+}
+
+// https://central.sonatype.org/pages/gradle.html
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = 'polypen'
+            from components.java
+
+            artifact sourcesJar
+            artifact javadocJar
+
+            pom {
+                name = 'polypen'
+                packaging = 'jar'
+                description = 'Polynomials 4 Java'
+                url = 'https://github.com/jbock-java/polypen'
+
+                licenses {
+                    license {
+                        name = 'MIT License'
+                        url = 'https://opensource.org/licenses/MIT'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'Various'
+                        name = 'Various'
+                        email = 'jbock-java@gmx.de'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:https://github.com/jbock-java/polypen.git'
+                    developerConnection = 'scm:git:https://github.com/jbock-java/polypen.git'
+                    url = 'https://github.com/jbock-java/polypen'
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            url = 'https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/'
+            credentials {
+                username = System.getenv('OSS_USER')
+                password = System.getenv('OSS_PASS')
+            }
+        }
+    }
+}
+
+// https://docs.gradle.org/current/userguide/signing_plugin.html
+signing {
+    def signingKey = findProperty('signingKey')
+    def signingPassword = findProperty('signingPassword')
+    useInMemoryPgpKeys(signingKey, signingPassword)
+    sign publishing.publications.mavenJava
+}
