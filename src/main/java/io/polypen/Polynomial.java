@@ -18,6 +18,16 @@ public final class Polynomial {
         return new Polynomial(Parser.parse(s));
     }
 
+    public Polynomial add(String s) {
+        List<Fraction> other = Parser.parse(s);
+        int rank = Math.max(coefficients.size(), other.size());
+        List<Fraction> r = new ArrayList<>(rank);
+        for (int i = 0; i < rank; i++) {
+            r.add(get(i).add(i < other.size() ? other.get(i) : Fraction.ZERO));
+        }
+        return new Polynomial(r);
+    }
+
     @Override
     public String toString() {
         List<String> result = new ArrayList<>(coefficients.size());
@@ -40,5 +50,25 @@ public final class Polynomial {
             }
         }
         return String.join(" ", result);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null) return false;
+        if (!(o instanceof Polynomial)) return false;
+        return coefficients.equals(((Polynomial) o).coefficients);
+    }
+
+    @Override
+    public int hashCode() {
+        return coefficients.hashCode();
+    }
+
+    private Fraction get(int i) {
+        if (i >= coefficients.size()) {
+            return Fraction.ZERO;
+        }
+        return coefficients.get(i);
     }
 }
