@@ -10,7 +10,7 @@ import static io.polypen.Util.isAbsoluteOne;
 public final class Polynomial {
     private final List<Fraction> coefficients;
 
-    private Polynomial(List<Fraction> coefficients) {
+    Polynomial(List<Fraction> coefficients) {
         this.coefficients = coefficients;
     }
 
@@ -23,7 +23,7 @@ public final class Polynomial {
         int rank = Math.max(coefficients.size(), other.size());
         List<Fraction> r = new ArrayList<>(rank);
         for (int i = 0; i < rank; i++) {
-            r.add(get(i).add(i < other.size() ? other.get(i) : Fraction.ZERO));
+            r.add(coefficient(i).add(i < other.size() ? other.get(i) : Fraction.ZERO));
         }
         return new Polynomial(r);
     }
@@ -41,11 +41,11 @@ public final class Polynomial {
             if (i == 0) {
                 result.add(prettySign + coefficient.abs());
             } else {
-                String exponent = i == 1 ? "x" : "x^" + i;
+                String factor = i == 1 ? "x" : "x^" + i;
                 if (isAbsoluteOne(coefficient)) {
-                    result.add(prettySign + exponent);
+                    result.add(prettySign + factor);
                 } else {
-                    result.add(prettySign + coefficient.abs() + " " + "x^" + i);
+                    result.add(prettySign + coefficient.abs() + " " + factor);
                 }
             }
         }
@@ -65,10 +65,14 @@ public final class Polynomial {
         return coefficients.hashCode();
     }
 
-    private Fraction get(int i) {
+    public Fraction coefficient(int i) {
         if (i >= coefficients.size()) {
             return Fraction.ZERO;
         }
         return coefficients.get(i);
+    }
+
+    public int degree() {
+        return coefficients.size() - 1;
     }
 }
