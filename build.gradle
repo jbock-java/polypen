@@ -14,6 +14,12 @@ compileJava {
     options.compilerArgs << '17'
 }
 
+jar {
+    manifest {
+        attributes 'Main-Class': 'io.polypen.Main'
+    }
+}
+
 repositories {
     mavenCentral()
 }
@@ -29,16 +35,21 @@ tasks.withType(GenerateModuleMetadata).configureEach {
 
 dependencies {
     implementation 'org.apache.commons:commons-numbers-fraction:1.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.9.0'
 }
 
-jar {
-    manifest {
-        attributes(
-                'Implementation-Version': project.properties['version']
-        )
-    }
+tasks.register('copyDependencies', Copy) {
+    from configurations.compileClasspath
+    into "${rootDir}/dependencies"
 }
+
+tasks.build.dependsOn(copyDependencies)
+
+clean.doFirst {
+    delete "${rootDir}/dependencies"
+}
+javadoc.options.addStringOption('Xdoclint:none', '-quiet')
 
 test {
     useJUnitPlatform()

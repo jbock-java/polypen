@@ -10,6 +10,7 @@ import static io.polypen.Util.isAbsoluteOne;
 public final class Polynomial {
 
     public static final Polynomial ZERO = new Polynomial(List.of(Fraction.ZERO));
+    public static final Polynomial ONE = new Polynomial(List.of(Fraction.ONE));
 
     private final List<Fraction> coefficients;
 
@@ -18,7 +19,7 @@ public final class Polynomial {
     }
 
     public static Polynomial parse(String s) {
-        return new Polynomial(Parser.parse(s));
+        return new Polynomial(Parser.parsePolynomial(s));
     }
 
     public Polynomial add(Polynomial other) {

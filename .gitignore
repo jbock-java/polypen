@@ -9,3 +9,4 @@ build
 /compiler/out
 /examples/out
 /gradle.properties
+/dependencies

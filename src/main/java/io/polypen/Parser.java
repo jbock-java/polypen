@@ -9,7 +9,7 @@ import java.util.TreeMap;
 
 final class Parser {
 
-    static List<Fraction> parse(String s) {
+    static List<Fraction> parsePolynomial(String s) {
         List<SignedToken> strings = split(s.trim());
         TreeMap<Integer, Fraction> cof = new TreeMap<>();
         for (SignedToken term : strings) {
@@ -39,6 +39,40 @@ final class Parser {
             Integer exponent = e.getKey();
             Fraction coefficient = e.getValue();
             result.set(exponent, coefficient);
+        }
+        return result;
+    }
+
+    static List<String> parseProduct(String s) {
+        List<String> result = new ArrayList<>();
+        StringBuilder sb = new StringBuilder();
+        int nestingLevel = -1;
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            switch (c) {
+                case '(' -> nestingLevel = Math.max(0, nestingLevel) + 1;
+                case ')' -> {
+                    nestingLevel--;
+                    if (!sb.isEmpty() && nestingLevel == 0) {
+                        result.add(sb.toString());
+                        sb.setLength(0);
+                    }
+                    if (nestingLevel < 0) {
+                        throw new IllegalStateException("Illegal nesting");
+                    }
+                }
+                default -> {
+                    if (nestingLevel != 0) {
+                        sb.append(c);
+                    }
+                }
+            }
+        }
+        if (Math.max(nestingLevel, 0) != 0) {
+            throw new IllegalStateException("Illegal nesting");
+        }
+        if (!sb.isEmpty()) {
+            result.add(sb.toString());
         }
         return result;
     }

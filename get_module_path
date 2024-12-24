@@ -1,0 +1,13 @@
+#!/bin/bash
+
+join_tokens() {
+  local IFS=:
+  echo "$*"
+}
+
+JARS=()
+for S in build/libs/*.jar dependencies/*.jar; do
+  JARS+=($S)
+done
+
+join_tokens ${JARS[@]}

@@ -3,6 +3,8 @@ package io.polypen;
 import org.apache.commons.numbers.fraction.Fraction;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static io.polypen.Polynomial.parse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -33,5 +35,11 @@ class PolynomialTest {
     void monomialMultiplication() {
         assertEquals(parse("2x^6 - 4x^2 - 2x"),
                 new Monomial(Fraction.of(2), 1).multiply(parse("x^5 - 2x - 1")));
+    }
+
+    @Test
+    void parseProduct() {
+        List<String> strings = Parser.parseProduct("(a + 1) * (a - 1)");
+        assertEquals(List.of("a + 1", "a - 1"), strings);
     }
 }
