@@ -1,5 +1,6 @@
 package io.polypen;
 
+import io.polypen.Expressions.Expression;
 import org.apache.commons.numbers.fraction.Fraction;
 import org.junit.jupiter.api.Test;
 
@@ -7,6 +8,7 @@ import java.util.List;
 
 import static io.polypen.Polynomial.parse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 class PolynomialTest {
 
@@ -39,7 +41,9 @@ class PolynomialTest {
 
     @Test
     void parseProduct() {
-        List<String> strings = Parser.parseProduct("(a + 1) * (a - 1)");
-        assertEquals(List.of("a + 1", "a - 1"), strings);
+        Expression expression = Parser.parseProduct("(a + 1) * (a - 1)");
+        assertInstanceOf(Expressions.Product.class, expression);
+        Expressions.Product product = (Expressions.Product) expression;
+        assertEquals(List.of("a + 1", "a - 1"), product.factors());
     }
 }

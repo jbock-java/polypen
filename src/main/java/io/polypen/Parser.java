@@ -1,5 +1,7 @@
 package io.polypen;
 
+import io.polypen.Expressions.Expression;
+import io.polypen.Expressions.Product;
 import org.apache.commons.numbers.fraction.Fraction;
 
 import java.util.ArrayList;
@@ -43,7 +45,7 @@ final class Parser {
         return result;
     }
 
-    static List<String> parseProduct(String s) {
+    static Expression parseProduct(String s) {
         List<String> result = new ArrayList<>();
         StringBuilder sb = new StringBuilder();
         int nestingLevel = -1;
@@ -74,7 +76,7 @@ final class Parser {
         if (!sb.isEmpty()) {
             result.add(sb.toString());
         }
-        return result;
+        return new Product(result);
     }
 
     enum Sign {
