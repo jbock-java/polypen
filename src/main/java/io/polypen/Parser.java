@@ -79,6 +79,37 @@ final class Parser {
         return new Product(result);
     }
 
+    static Type outerop(String s) {
+        int nestingLevel = -1;
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            switch (c) {
+                case '(' -> nestingLevel = Math.max(0, nestingLevel) + 1;
+                case ')' -> {
+                    nestingLevel--;
+                    if (nestingLevel < 0) {
+                        throw new IllegalStateException("Illegal nesting");
+                    }
+                }
+                case '+', '-' -> {
+                    if (nestingLevel == 0) {
+                        return Type.SUM;
+                    }
+                }
+                default -> {
+                }
+            }
+        }
+        if (Math.max(nestingLevel, 0) != 0) {
+            throw new IllegalStateException("Illegal nesting");
+        }
+        return Type.PRODUCT;
+    }
+
+    enum Type {
+        SUM, PRODUCT
+    }
+
     enum Sign {
         PLUS(1), MINUS(-1);
         final int factor;
