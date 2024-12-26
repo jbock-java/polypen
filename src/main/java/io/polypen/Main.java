@@ -13,7 +13,7 @@ public class Main {
             String line = in.nextLine();
             sb.append(line);
         }
-        Expression expression = Parser.parseProduct(sb.toString());
+        Expression expression = Parser.parse(sb.toString());
         System.out.println(expression.eval());
     }
 }

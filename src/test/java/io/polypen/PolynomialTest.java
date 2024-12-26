@@ -41,9 +41,9 @@ class PolynomialTest {
 
     @Test
     void parseProduct() {
-        Expression expression = Parser.parseProduct("(a + 1) * (a - 1)");
+        Expression expression = Parser.parse("(a + 1) * (a - 1)");
         assertInstanceOf(Expressions.Product.class, expression);
         Expressions.Product product = (Expressions.Product) expression;
-        assertEquals(List.of("a + 1", "a - 1"), product.factors());
+        assertEquals(List.of("a + 1", "a - 1"), product.factors().stream().map(Parser.SignedString::token).toList());
     }
 }

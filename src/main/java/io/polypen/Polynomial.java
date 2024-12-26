@@ -1,5 +1,6 @@
 package io.polypen;
 
+import io.polypen.Parser.SignedString;
 import org.apache.commons.numbers.fraction.Fraction;
 
 import java.util.ArrayList;
@@ -20,6 +21,14 @@ public final class Polynomial {
 
     public static Polynomial parse(String s) {
         return new Polynomial(Parser.parsePolynomial(s));
+    }
+
+    public static Polynomial parse(SignedString s) {
+        Polynomial p = parse(s.token());
+        return switch (s.sign()) {
+            case PLUS -> p;
+            case MINUS -> p.multiply(-1);
+        };
     }
 
     public Polynomial add(Polynomial other) {
@@ -43,6 +52,14 @@ public final class Polynomial {
             result = result.add(p);
         }
         return result;
+    }
+
+    public Polynomial multiply(int factor) {
+        ArrayList<Fraction> newCoefficients = new ArrayList<>();
+        for (Fraction coefficient : coefficients) {
+            newCoefficients.add(coefficient.multiply(factor));
+        }
+        return new Polynomial(newCoefficients);
     }
 
     public Polynomial multiply(String s) {
