@@ -1,6 +1,5 @@
 package io.polypen;
 
-import io.polypen.Parser.SignedString;
 import org.apache.commons.numbers.fraction.Fraction;
 
 import java.util.ArrayList;
@@ -20,15 +19,55 @@ public final class Polynomial {
     }
 
     public static Polynomial parse(String s) {
-        return new Polynomial(Parser.parsePolynomial(s));
+        NestingInfo nestingInfo = unnest(s.trim());
+        return new Polynomial(Parser.parsePolynomial(nestingInfo.term)).multiply(nestingInfo.sign);
     }
 
-    public static Polynomial parse(SignedString s) {
-        Polynomial p = parse(s.token());
-        return switch (s.sign()) {
-            case PLUS -> p;
-            case MINUS -> p.multiply(-1);
-        };
+    private static NestingInfo unnest(String s) {
+        int nestingLevel = -1;
+        int sign = 1;
+        int start = 0;
+        int end = 0;
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            switch (c) {
+                case '(' -> {
+                    nestingLevel = Math.max(nestingLevel, 0) + 1;
+                }
+                case ')' -> {
+                    if (end == 0) {
+                        end = i;
+                    }
+                    nestingLevel--;
+                    if (nestingLevel < 0) {
+                        throw new IllegalStateException("Illegal nesting");
+                    }
+                }
+                case '-' -> {
+                    if (start == 0) {
+                        sign *= -1;
+                    }
+                }
+                case '+', ' ' -> {
+                    //ignore
+                }
+                default -> {
+                    if (start == 0) {
+                        start = i;
+                    }
+                }
+            }
+        }
+        if (nestingLevel > 0) {
+            throw new IllegalStateException("Illegal nesting");
+        }
+        if (nestingLevel == -1) {
+            return new NestingInfo(1, s);
+        }
+        return new NestingInfo(sign, s.substring(start, end));
+    }
+
+    private record NestingInfo(int sign, String term) {
     }
 
     public Polynomial add(Polynomial other) {
@@ -69,12 +108,14 @@ public final class Polynomial {
     @Override
     public String toString() {
         List<String> result = new ArrayList<>(coefficients.size());
+        boolean firstCoefficient = true;
         for (int i = coefficients.size() - 1; i >= 0; i--) {
             Fraction coefficient = coefficients.get(i);
             if (coefficient.isZero()) {
                 continue;
             }
-            String plus = (i == coefficients.size() - 1 && coefficient.compareTo(Fraction.ZERO) > 0) ? "" : "+ ";
+            String plus = (i == coefficients.size() - 1 && coefficient.compareTo(Fraction.ZERO) > 0) ? "" : firstCoefficient ? "" : "+ ";
+            firstCoefficient = false;
             String prettySign = coefficient.compareTo(Fraction.ZERO) < 0 ? "- " : plus;
             if (i == 0) {
                 result.add(prettySign + coefficient.abs());
@@ -83,7 +124,7 @@ public final class Polynomial {
                 if (isAbsoluteOne(coefficient)) {
                     result.add(prettySign + factor);
                 } else {
-                    result.add(prettySign + coefficient.abs() + " " + factor);
+                    result.add(prettySign + coefficient.abs() + factor);
                 }
             }
         }
@@ -95,7 +136,24 @@ public final class Polynomial {
         if (this == o) return true;
         if (o == null) return false;
         if (!(o instanceof Polynomial)) return false;
-        return coefficients.equals(((Polynomial) o).coefficients);
+        Polynomial p = (Polynomial) o;
+        int size = Math.min(coefficients.size(), p.coefficients.size());
+        for (int i = 0; i < size; i++) {
+            if (!coefficients.get(i).equals(p.coefficients.get(i))) {
+                return false;
+            }
+        }
+        for (int i = size; i < coefficients.size(); i++) {
+            if (!coefficients.get(i).equals(Fraction.ZERO)) {
+                return false;
+            }
+        }
+        for (int i = size; i < p.coefficients.size(); i++) {
+            if (!p.coefficients.get(i).equals(Fraction.ZERO)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override

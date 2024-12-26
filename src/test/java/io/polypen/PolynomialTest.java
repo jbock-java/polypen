@@ -1,21 +1,17 @@
 package io.polypen;
 
-import io.polypen.Expressions.Expression;
 import org.apache.commons.numbers.fraction.Fraction;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-
 import static io.polypen.Polynomial.parse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 class PolynomialTest {
 
     @Test
     void polynomialToString() {
         assertEquals("x^5 - x - 1", parse("-x + x^5 - 1").toString());
-        assertEquals("2 x^6 - 4 x^2 - 2 x", parse("2x^6 - 4x^2 - 2x").toString());
+        assertEquals("2x^6 - 4x^2 - 2x", parse("2x^6 - 4x^2 - 2x").toString());
     }
 
     @Test
@@ -40,10 +36,14 @@ class PolynomialTest {
     }
 
     @Test
-    void parseProduct() {
-        Expression expression = Parser.parse("(a + 1) * (a - 1)");
-        assertInstanceOf(Expressions.Product.class, expression);
-        Expressions.Product product = (Expressions.Product) expression;
-        assertEquals(List.of("a + 1", "a - 1"), product.factors().stream().map(Parser.SignedString::token).toList());
+    void negative() {
+        Polynomial p = parse("-(x + 1)");
+        assertEquals(parse("-x - 1"), p);
+    }
+
+    @Test
+    void doubleNegative() {
+        Polynomial p = parse("-(x - 1)");
+        assertEquals(parse("-x + 1"), p);
     }
 }

@@ -1,35 +1,40 @@
 package io.polypen;
 
-import io.polypen.Parser.SignedString;
-
 import java.util.List;
 
 public class Expressions {
-    public sealed interface Expression permits Product, Sum {
-        String eval();
+    public sealed interface Expression permits Product, Sum, Literal {
+        Polynomial eval();
     }
 
-    public record Product(List<SignedString> factors) implements Expression {
+    public record Product(List<String> factors) implements Expression {
         @Override
-        public String eval() {
-            List<Polynomial> polynomials = factors.stream().map(SignedString::token).map(Polynomial::parse).toList();
+        public Polynomial eval() {
             Polynomial result = Polynomial.ONE;
-            for (Polynomial p : polynomials) {
+            for (String factor : factors) {
+                Polynomial p = Parser.parse(factor).eval();
                 result = result.multiply(p);
             }
-            return result.toString();
+            return result;
         }
     }
 
-    public record Sum(List<SignedString> factors) implements Expression {
+    public record Sum(List<String> terms) implements Expression {
         @Override
-        public String eval() {
-            List<Polynomial> polynomials = factors.stream().map(Polynomial::parse).toList();
+        public Polynomial eval() {
             Polynomial result = Polynomial.ZERO;
-            for (Polynomial p : polynomials) {
+            for (String term : terms) {
+                Polynomial p = Parser.parse(term).eval();
                 result = result.add(p);
             }
-            return result.toString();
+            return result;
+        }
+    }
+
+    public record Literal(String term) implements Expression {
+        @Override
+        public Polynomial eval() {
+            return Polynomial.parse(term);
         }
     }
 }

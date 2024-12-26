@@ -1,6 +1,7 @@
 package io.polypen;
 
 import io.polypen.Expressions.Expression;
+import io.polypen.Expressions.Literal;
 import io.polypen.Expressions.Product;
 import io.polypen.Expressions.Sum;
 import org.apache.commons.numbers.fraction.Fraction;
@@ -9,6 +10,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+
+import static io.polypen.Parser.Sign.MINUS;
+import static io.polypen.Parser.Sign.PLUS;
+import static io.polypen.Parser.Type.PRODUCT;
+import static io.polypen.Parser.Type.SUM;
 
 final class Parser {
 
@@ -47,42 +53,33 @@ final class Parser {
     }
 
     static Expression parse(String s) {
-        List<SignedString> result = new ArrayList<>();
+        List<String> result = new ArrayList<>();
         StringBuilder sb = new StringBuilder();
         int nestingLevel = -1;
-        Type outerop = Type.PRODUCT;
-        Sign sign = Sign.PLUS;
+        Type outerop = PRODUCT;
         for (int i = 0; i < s.length(); i++) {
             char c = s.charAt(i);
             switch (c) {
-                case '(' -> nestingLevel = Math.max(0, nestingLevel) + 1;
+                case '(' -> {
+                    nestingLevel = Math.max(0, nestingLevel) + 1;
+                    sb.append(c);
+                }
                 case ')' -> {
                     nestingLevel--;
-                    if (!sb.isEmpty() && nestingLevel == 0) {
-                        result.add(new SignedString(sign, sb.toString()));
+                    sb.append(c);
+                    if (nestingLevel == 0) {
+                        result.add(sb.toString());
                         sb.setLength(0);
-                        sign = Sign.PLUS;
                     }
                     if (nestingLevel < 0) {
                         throw new IllegalStateException("Illegal nesting");
                     }
                 }
-                case '-' -> {
+                case '-', '+' -> {
                     if (nestingLevel == 0) {
-                        outerop = Type.SUM;
+                        outerop = SUM;
                     }
-                    if (nestingLevel != 0) {
-                        sb.append(c);
-                    }
-                    sign = Sign.MINUS;
-                }
-                case '+' -> {
-                    if (nestingLevel == 0) {
-                        outerop = Type.SUM;
-                    }
-                    if (nestingLevel != 0) {
-                        sb.append(c);
-                    }
+                    sb.append(c);
                 }
                 default -> {
                     if (nestingLevel != 0) {
@@ -95,39 +92,15 @@ final class Parser {
             throw new IllegalStateException("Illegal nesting");
         }
         if (!sb.isEmpty()) {
-            result.add(new SignedString(sign, sb.toString()));
+            result.add(sb.toString());
+        }
+        if (result.size() == 1) {
+            return new Literal(s);
         }
         return switch (outerop) {
             case PRODUCT -> new Product(result);
             case SUM -> new Sum(result);
         };
-    }
-
-    static Type outerop(String s) {
-        int nestingLevel = -1;
-        for (int i = 0; i < s.length(); i++) {
-            char c = s.charAt(i);
-            switch (c) {
-                case '(' -> nestingLevel = Math.max(0, nestingLevel) + 1;
-                case ')' -> {
-                    nestingLevel--;
-                    if (nestingLevel < 0) {
-                        throw new IllegalStateException("Illegal nesting");
-                    }
-                }
-                case '+', '-' -> {
-                    if (nestingLevel == 0) {
-                        return Type.SUM;
-                    }
-                }
-                default -> {
-                }
-            }
-        }
-        if (Math.max(nestingLevel, 0) != 0) {
-            throw new IllegalStateException("Illegal nesting");
-        }
-        return Type.PRODUCT;
     }
 
     enum Type {
@@ -148,16 +121,16 @@ final class Parser {
 
     private static List<SignedString> split(String s) {
         List<SignedString> result = new ArrayList<>();
-        Sign sign = Sign.PLUS;
+        Sign sign = PLUS;
         int pos = -1;
         for (int i = 0; i < s.length(); i++) {
             if (s.charAt(i) == '-') {
                 result.add(new SignedString(sign, s.substring(pos + 1, i).trim()));
-                sign = Sign.MINUS;
+                sign = MINUS;
                 pos = i;
             } else if (s.charAt(i) == '+') {
                 result.add(new SignedString(sign, s.substring(pos + 1, i).trim()));
-                sign = Sign.PLUS;
+                sign = PLUS;
                 pos = i;
             }
         }
