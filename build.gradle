@@ -34,7 +34,6 @@ tasks.withType(GenerateModuleMetadata).configureEach {
 }
 
 dependencies {
-    implementation 'org.apache.commons:commons-numbers-fraction:1.2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.9.0'
 }

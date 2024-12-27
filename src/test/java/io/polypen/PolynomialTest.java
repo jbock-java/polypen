@@ -1,6 +1,5 @@
 package io.polypen;
 
-import org.apache.commons.numbers.fraction.Fraction;
 import org.junit.jupiter.api.Test;
 
 import static io.polypen.Polynomial.parse;
@@ -32,7 +31,7 @@ class PolynomialTest {
     @Test
     void monomialMultiplication() {
         assertEquals(parse("2x^6 - 4x^2 - 2x"),
-                new Monomial(Fraction.of(2), 1).multiply(parse("x^5 - 2x - 1")));
+                new Monomial(2, 1).multiply(parse("x^5 - 2x - 1")));
     }
 
     @Test

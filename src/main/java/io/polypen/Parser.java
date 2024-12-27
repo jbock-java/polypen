@@ -4,7 +4,6 @@ import io.polypen.Expressions.Expression;
 import io.polypen.Expressions.Literal;
 import io.polypen.Expressions.Product;
 import io.polypen.Expressions.Sum;
-import org.apache.commons.numbers.fraction.Fraction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,35 +17,36 @@ import static io.polypen.Parser.Type.SUM;
 
 final class Parser {
 
-    static List<Fraction> parsePolynomial(String s) {
+    static List<Integer> parsePolynomial(String s) {
         List<SignedString> strings = split(s.trim());
-        TreeMap<Integer, Fraction> cof = new TreeMap<>();
+        TreeMap<Integer, Integer> cof = new TreeMap<>();
         for (SignedString term : strings) {
             String[] tokens = term.token.split("[a-z]", 3);
             String coefficient = tokens[0].replace("*", "").trim();
             if (coefficient.isEmpty()) {
                 coefficient = "1";
             }
+            int signedCoefficient = Integer.parseInt(coefficient) * term.sign.factor;
             if (tokens.length == 1) {
-                cof.put(0, Fraction.parse(coefficient).multiply(term.sign.factor));
+                cof.put(0, signedCoefficient);
             } else {
                 String rawExponent = tokens[1].replace("^", "").trim();
                 if (rawExponent.isEmpty()) {
-                    cof.put(1, Fraction.parse(coefficient).multiply(term.sign.factor));
+                    cof.put(1, signedCoefficient);
                 } else {
                     int exponent = Integer.parseInt(rawExponent);
-                    cof.put(exponent, Fraction.parse(coefficient).multiply(term.sign.factor));
+                    cof.put(exponent, signedCoefficient);
                 }
             }
         }
         Integer highestExponent = cof.lastKey();
-        List<Fraction> result = new ArrayList<>(highestExponent);
+        List<Integer> result = new ArrayList<>(highestExponent);
         for (int i = 0; i <= highestExponent; i++) {
-            result.add(Fraction.ZERO);
+            result.add(0);
         }
-        for (Map.Entry<Integer, Fraction> e : cof.entrySet()) {
+        for (Map.Entry<Integer, Integer> e : cof.entrySet()) {
             Integer exponent = e.getKey();
-            Fraction coefficient = e.getValue();
+            Integer coefficient = e.getValue();
             result.set(exponent, coefficient);
         }
         return result;

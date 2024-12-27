@@ -1,20 +1,16 @@
 package io.polypen;
 
-import org.apache.commons.numbers.fraction.Fraction;
-
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.polypen.Util.isAbsoluteOne;
-
 public final class Polynomial {
 
-    public static final Polynomial ZERO = new Polynomial(List.of(Fraction.ZERO));
-    public static final Polynomial ONE = new Polynomial(List.of(Fraction.ONE));
+    public static final Polynomial ZERO = new Polynomial(List.of(0));
+    public static final Polynomial ONE = new Polynomial(List.of(1));
 
-    private final List<Fraction> coefficients;
+    private final List<Integer> coefficients;
 
-    Polynomial(List<Fraction> coefficients) {
+    Polynomial(List<Integer> coefficients) {
         this.coefficients = coefficients;
     }
 
@@ -72,9 +68,9 @@ public final class Polynomial {
 
     public Polynomial add(Polynomial other) {
         int degree = Math.max(degree(), other.degree());
-        List<Fraction> r = new ArrayList<>(degree + 1);
+        List<Integer> r = new ArrayList<>(degree + 1);
         for (int i = 0; i <= degree; i++) {
-            r.add(coefficient(i).add(other.coefficient(i)));
+            r.add(coefficient(i) + other.coefficient(i));
         }
         return new Polynomial(r);
     }
@@ -94,9 +90,9 @@ public final class Polynomial {
     }
 
     public Polynomial multiply(int factor) {
-        ArrayList<Fraction> newCoefficients = new ArrayList<>();
-        for (Fraction coefficient : coefficients) {
-            newCoefficients.add(coefficient.multiply(factor));
+        List<Integer> newCoefficients = new ArrayList<>(coefficients.size());
+        for (Integer coefficient : coefficients) {
+            newCoefficients.add(coefficient * (factor));
         }
         return new Polynomial(newCoefficients);
     }
@@ -110,21 +106,23 @@ public final class Polynomial {
         List<String> result = new ArrayList<>(coefficients.size());
         boolean firstCoefficient = true;
         for (int i = coefficients.size() - 1; i >= 0; i--) {
-            Fraction coefficient = coefficients.get(i);
-            if (coefficient.isZero()) {
+            Integer coefficient = coefficients.get(i);
+            if (coefficient == 0) {
                 continue;
             }
-            String plus = (i == coefficients.size() - 1 && coefficient.compareTo(Fraction.ZERO) > 0) ? "" : firstCoefficient ? "" : "+ ";
+            String plus = i == coefficients.size() - 1 && coefficient > 0 ?
+                    "" :
+                    firstCoefficient ? "" : "+ ";
             firstCoefficient = false;
-            String prettySign = coefficient.compareTo(Fraction.ZERO) < 0 ? "- " : plus;
+            String prettySign = coefficient < 0 ? "- " : plus;
             if (i == 0) {
-                result.add(prettySign + coefficient.abs());
+                result.add(prettySign + Math.abs(coefficient));
             } else {
                 String factor = i == 1 ? "x" : "x^" + i;
-                if (isAbsoluteOne(coefficient)) {
+                if (Math.abs(coefficient) == 1) {
                     result.add(prettySign + factor);
                 } else {
-                    result.add(prettySign + coefficient.abs() + factor);
+                    result.add(prettySign + Math.abs(coefficient) + factor);
                 }
             }
         }
@@ -135,8 +133,7 @@ public final class Polynomial {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null) return false;
-        if (!(o instanceof Polynomial)) return false;
-        Polynomial p = (Polynomial) o;
+        if (!(o instanceof Polynomial p)) return false;
         int size = Math.min(coefficients.size(), p.coefficients.size());
         for (int i = 0; i < size; i++) {
             if (!coefficients.get(i).equals(p.coefficients.get(i))) {
@@ -144,12 +141,12 @@ public final class Polynomial {
             }
         }
         for (int i = size; i < coefficients.size(); i++) {
-            if (!coefficients.get(i).equals(Fraction.ZERO)) {
+            if (coefficients.get(i) != 0) {
                 return false;
             }
         }
         for (int i = size; i < p.coefficients.size(); i++) {
-            if (!p.coefficients.get(i).equals(Fraction.ZERO)) {
+            if (p.coefficients.get(i) != 0) {
                 return false;
             }
         }
@@ -161,9 +158,9 @@ public final class Polynomial {
         return coefficients.hashCode();
     }
 
-    public Fraction coefficient(int i) {
+    public Integer coefficient(int i) {
         if (i >= coefficients.size()) {
-            return Fraction.ZERO;
+            return 0;
         }
         return coefficients.get(i);
     }
