@@ -6,7 +6,7 @@ class ParserTest {
 
     @Test
     void parse() {
-        Parser.ListExpr result = Parser.parse("(a b) 2 3");
+        Parser.ListExpr result = Parser.parse("(a_1^12 + b12^2) * 2");
         System.out.println(result);
     }
 }
