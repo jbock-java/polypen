@@ -37,4 +37,15 @@ class ParserTest {
                         NumberExpr.of(1), PLUS, ListExpr.of(NumberExpr.of(2), MULT, NumberExpr.of(3)), PLUS, NumberExpr.of(4)),
                 expanded);
     }
+
+    @Test
+    void starMacro3() {
+        ListExpr result = Parser.parse("(1 + 2) * 3");
+        ListExpr expanded = applyStarMacro(result);
+        assertEquals(ListExpr.of(
+                        ListExpr.of(
+                                ListExpr.of(NumberExpr.of(1), PLUS, NumberExpr.of(2)),
+                                MULT, NumberExpr.of(3))),
+                expanded);
+    }
 }

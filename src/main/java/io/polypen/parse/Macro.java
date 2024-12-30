@@ -20,7 +20,7 @@ public class Macro {
         Expr previous = null;
         for (int i = 0; i < exprs.size(); i++) {
             Expr expr = exprs.get(i);
-            if (isStrongBind(previous) && (!isPlus(expr) || !region.isEmpty())) {
+            if (isStrongBind(previous) && (isStrongBind(expr) || !region.isEmpty())) {
                 region.add(previous);
             } else {
                 if (!region.isEmpty()) {
@@ -46,7 +46,7 @@ public class Macro {
         if (expr == null) {
             return false;
         }
-        return expr instanceof MultExpr || expr instanceof VarExp || expr instanceof NumberExpr;
+        return expr instanceof MultExpr || expr instanceof VarExp || expr instanceof NumberExpr || expr instanceof ListExpr;
     }
 
     public static boolean isPlus(Expr expr) {
