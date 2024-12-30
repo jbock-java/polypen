@@ -1,6 +1,7 @@
 package io.polypen;
 
-import io.polypen.Expressions.Expression;
+import io.polypen.parse.Parser;
+import io.polypen.parse.Parser.ListExpr;
 
 import java.util.Scanner;
 
@@ -13,7 +14,7 @@ public class Main {
             String line = in.nextLine();
             sb.append(line);
         }
-        Expression expression = Parser.parse(sb.toString());
-        System.out.println(expression.eval());
+        ListExpr expression = Parser.parse(sb.toString());
+        System.out.println(Parser.eval(expression));
     }
 }

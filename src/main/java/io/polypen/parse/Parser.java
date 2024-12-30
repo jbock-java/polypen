@@ -1,5 +1,8 @@
 package io.polypen.parse;
 
+import io.polypen.Monomial;
+import io.polypen.Polynomial;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -138,10 +141,81 @@ public final class Parser {
 
     public static final Expr MULT = new MultExpr();
 
+    public static Polynomial eval(Expr expr) {
+        return switch (expr) {
+            case ListExpr listExpr -> {
+                if (listExpr.value.size() == 1) {
+                    yield eval(listExpr.value().getFirst());
+                }
+                List<Expr> exprs = Macro.applyStarMacro(listExpr);
+                if (exprs.size() == 1) {
+                    yield eval(exprs.getFirst());
+                }
+                Polynomial result;
+                if (hasPlus(exprs)) {
+                    result = Polynomial.ZERO;
+                    int sign = 1;
+                    for (Expr exp : exprs) {
+                        if (isMinus(exp)) {
+                            sign = -1;
+                            continue;
+                        }
+                        if (isPlus(exp)) {
+                            sign = 1;
+                            continue;
+                        }
+                        Polynomial p = eval(exp);
+                        result = result.add(p.multiply(sign));
+                    }
+                } else {
+                    result = Polynomial.ONE;
+                    for (Expr exp : exprs) {
+                        if (isOperator(exp)) {
+                            continue;
+                        }
+                        Polynomial p = eval(exp);
+                        result = result.multiply(p);
+                    }
+                }
+                yield result;
+            }
+            case NumberExpr numberExpr -> new Monomial(numberExpr.value, 0).polynomial();
+            case VarExp varExp -> new Monomial(1, varExp.exp).polynomial();
+            default -> throw new IllegalStateException(expr.toString());
+        };
+    }
+
+    private static boolean isOperator(Expr expr) {
+        return switch (expr) {
+            case MinusExpr ignored -> true;
+            case MultExpr ignored -> true;
+            case PlusExpr ignored -> true;
+            default -> false;
+        };
+    }
+
+    private static boolean isPlus(Expr expr) {
+        return expr instanceof PlusExpr;
+    }
+
+    private static boolean isMinus(Expr expr) {
+        return expr instanceof MinusExpr;
+    }
+
+    private static boolean hasPlus(List<Expr> exprs) {
+        for (Expr expr : exprs) {
+            if (expr instanceof PlusExpr || expr instanceof MinusExpr) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public record ListExpr(List<Expr> value) implements Expr {
         public static ListExpr of(Expr... value) {
             return new ListExpr(List.of(value));
         }
+
     }
 
     public record NumberExpr(int value) implements Expr {

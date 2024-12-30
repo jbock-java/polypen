@@ -1,5 +1,7 @@
 package io.polypen;
 
+import io.polypen.parse.Parser;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,55 +17,7 @@ public final class Polynomial {
     }
 
     public static Polynomial parse(String s) {
-        NestingInfo nestingInfo = unnest(s.trim());
-        return new Polynomial(Parser.parsePolynomial(nestingInfo.term)).multiply(nestingInfo.sign);
-    }
-
-    private static NestingInfo unnest(String s) {
-        int nestingLevel = -1;
-        int sign = 1;
-        int start = 0;
-        int end = 0;
-        for (int i = 0; i < s.length(); i++) {
-            char c = s.charAt(i);
-            switch (c) {
-                case '(' -> {
-                    nestingLevel = Math.max(nestingLevel, 0) + 1;
-                }
-                case ')' -> {
-                    if (end == 0) {
-                        end = i;
-                    }
-                    nestingLevel--;
-                    if (nestingLevel < 0) {
-                        throw new IllegalStateException("Illegal nesting");
-                    }
-                }
-                case '-' -> {
-                    if (start == 0) {
-                        sign *= -1;
-                    }
-                }
-                case '+', ' ' -> {
-                    //ignore
-                }
-                default -> {
-                    if (start == 0) {
-                        start = i;
-                    }
-                }
-            }
-        }
-        if (nestingLevel > 0) {
-            throw new IllegalStateException("Illegal nesting");
-        }
-        if (nestingLevel == -1) {
-            return new NestingInfo(1, s);
-        }
-        return new NestingInfo(sign, s.substring(start, end));
-    }
-
-    private record NestingInfo(int sign, String term) {
+        return Parser.eval(Parser.parse(s));
     }
 
     public Polynomial add(Polynomial other) {
