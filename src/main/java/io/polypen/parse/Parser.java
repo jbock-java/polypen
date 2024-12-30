@@ -108,37 +108,52 @@ public final class Parser {
         }
     }
 
-    public interface Expr {
+    public sealed interface Expr permits PlusExpr, MinusExpr, MultExpr, ListExpr, NumberExpr, VarExp {
     }
 
-    public static final Expr PLUS = new Expr() {
+    public static final class PlusExpr implements Expr {
         @Override
         public String toString() {
             return "+";
         }
-    };
+    }
 
-    public static final Expr MINUS = new Expr() {
+    public static final Expr PLUS = new PlusExpr();
+
+    public static final class MinusExpr implements Expr {
         @Override
         public String toString() {
             return "-";
         }
-    };
+    }
 
-    public static final Expr MULT = new Expr() {
+    public static final Expr MINUS = new MinusExpr();
+
+    public static final class MultExpr implements Expr {
         @Override
         public String toString() {
             return "*";
         }
-    };
+    }
+
+    public static final Expr MULT = new MultExpr();
 
     public record ListExpr(List<Expr> value) implements Expr {
+        public static ListExpr of(Expr... value) {
+            return new ListExpr(List.of(value));
+        }
     }
 
     public record NumberExpr(int value) implements Expr {
+        public static NumberExpr of(int value) {
+            return new NumberExpr(value);
+        }
     }
 
     public record VarExp(String var, int exp) implements Expr {
+        public static VarExp of(String var, int exp) {
+            return new VarExp(var, exp);
+        }
     }
 
     private Parser() {
