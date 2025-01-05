@@ -37,6 +37,15 @@ class ParserTest {
     }
 
     @Test
+    void starMacro5() {
+        ListExpr result = parse("1 + 2 * 3 * 4");
+        List<Expr> expanded = applyStarMacro(result);
+        assertEquals(List.of(
+                        NumberExpr.of(1), PLUS, ListExpr.of(NumberExpr.of(2), MULT, NumberExpr.of(3), MULT, NumberExpr.of(4))),
+                expanded);
+    }
+
+    @Test
     void starMacro2() {
         ListExpr result = parse("1 + 2 * 3 + 4");
         List<Expr> expanded = applyStarMacro(result);
