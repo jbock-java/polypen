@@ -3,7 +3,9 @@ package io.polypen.parse;
 import io.polypen.parse.Parser.Expr;
 import io.polypen.parse.Parser.ListExpr;
 import io.polypen.parse.Parser.MultExpr;
+import io.polypen.parse.Parser.MultListExpr;
 import io.polypen.parse.Parser.NumberExpr;
+import io.polypen.parse.Parser.PlusListExpr;
 import io.polypen.parse.Parser.VarExp;
 
 import java.util.ArrayList;
@@ -11,8 +13,7 @@ import java.util.List;
 
 public class Macro {
 
-    static List<Expr> applyStarMacro(ListExpr listExpr) {
-        List<Expr> exprs = listExpr.value();
+    static Expr applyStarMacro(List<Expr> exprs) {
         List<Expr> exprsCopy = new ArrayList<>(exprs.size());
         List<Expr> region = new ArrayList<>(exprs.size());
         Expr previous = null;
@@ -21,25 +22,36 @@ public class Macro {
                 region.add(previous);
             } else {
                 if (!region.isEmpty()) {
-                    exprsCopy.add(new ListExpr(new ArrayList<>(region)));
+                    exprsCopy.add(new MultListExpr(new ArrayList<>(region)));
                     region.clear();
                 }
                 if (previous != null) {
                     exprsCopy.add(previous);
                 }
             }
-            previous = expr;
+            previous = expandRecursively(expr);
         }
         if (exprsCopy.isEmpty()) {
-            return listExpr.value();
+            List<Expr> mapped = new ArrayList<>();
+            for (Expr expr : exprs) {
+                mapped.add(expandRecursively(expr));
+            }
+            return new MultListExpr(mapped);
         }
         if (region.isEmpty()) {
-            exprsCopy.add(previous);
+            exprsCopy.add(expandRecursively(previous));
         } else {
-            region.add(previous);
-            exprsCopy.add(new ListExpr(region));
+            region.add(expandRecursively(previous));
+            exprsCopy.add(new MultListExpr(region));
         }
-        return exprsCopy;
+        return new PlusListExpr(exprsCopy);
+    }
+
+    private static Expr expandRecursively(Expr expr) {
+        return switch (expr) {
+            case ListExpr x -> applyStarMacro(x.value());
+            default -> expr;
+        };
     }
 
     public static boolean isStrongBind(Expr expr) {
@@ -48,6 +60,8 @@ public class Macro {
         }
         return switch (expr) {
             case ListExpr ignored -> true;
+            case PlusListExpr ignored -> true;
+            case MultListExpr ignored -> true;
             case MultExpr ignored -> true;
             case NumberExpr ignored -> true;
             case VarExp ignored -> true;

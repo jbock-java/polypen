@@ -111,13 +111,33 @@ public final class Parser {
         }
     }
 
-    public sealed interface Expr permits PlusExpr, MinusExpr, MultExpr, ListExpr, NumberExpr, VarExp {
+    public sealed interface Expr permits PlusExpr, MinusExpr, MultExpr, ListExpr, NumberExpr, VarExp, PlusListExpr, MultListExpr {
+        int size();
+
+        Expr getFirst();
+
+        List<Expr> getExprs();
     }
 
     public static final class PlusExpr implements Expr {
         @Override
         public String toString() {
             return "+";
+        }
+
+        @Override
+        public int size() {
+            return 0;
+        }
+
+        @Override
+        public Expr getFirst() {
+            return null;
+        }
+
+        @Override
+        public List<Expr> getExprs() {
+            return List.of();
         }
     }
 
@@ -128,6 +148,21 @@ public final class Parser {
         public String toString() {
             return "-";
         }
+
+        @Override
+        public int size() {
+            return 0;
+        }
+
+        @Override
+        public Expr getFirst() {
+            return null;
+        }
+
+        @Override
+        public List<Expr> getExprs() {
+            return List.of();
+        }
     }
 
     public static final Expr MINUS = new MinusExpr();
@@ -137,17 +172,32 @@ public final class Parser {
         public String toString() {
             return "*";
         }
+
+        @Override
+        public int size() {
+            return 0;
+        }
+
+        @Override
+        public Expr getFirst() {
+            return null;
+        }
+
+        @Override
+        public List<Expr> getExprs() {
+            return List.of();
+        }
     }
 
     public static final Expr MULT = new MultExpr();
 
     public static Polynomial eval(Expr expr) {
         return switch (expr) {
-            case ListExpr listExpr -> {
+            case PlusListExpr listExpr -> {
                 if (listExpr.value.size() == 1) {
                     yield eval(listExpr.value().getFirst());
                 }
-                List<Expr> exprs = Macro.applyStarMacro(listExpr);
+                Expr exprs = Macro.applyStarMacro(listExpr.value);
                 if (exprs.size() == 1) {
                     yield eval(exprs.getFirst());
                 }
@@ -155,7 +205,7 @@ public final class Parser {
                 if (hasPlus(exprs)) {
                     result = Polynomial.ZERO;
                     int sign = 1;
-                    for (Expr exp : exprs) {
+                    for (Expr exp : exprs.getExprs()) {
                         if (isMinus(exp)) {
                             sign = -1;
                             continue;
@@ -169,7 +219,79 @@ public final class Parser {
                     }
                 } else {
                     result = Polynomial.ONE;
-                    for (Expr exp : exprs) {
+                    for (Expr exp : exprs.getExprs()) {
+                        if (isOperator(exp)) {
+                            continue;
+                        }
+                        Polynomial p = eval(exp);
+                        result = result.multiply(p);
+                    }
+                }
+                yield result;
+            }
+            case MultListExpr listExpr -> {
+                if (listExpr.value.size() == 1) {
+                    yield eval(listExpr.value().getFirst());
+                }
+                Expr exprs = Macro.applyStarMacro(listExpr.value);
+                if (exprs.size() == 1) {
+                    yield eval(exprs.getFirst());
+                }
+                Polynomial result;
+                if (hasPlus(exprs)) {
+                    result = Polynomial.ZERO;
+                    int sign = 1;
+                    for (Expr exp : exprs.getExprs()) {
+                        if (isMinus(exp)) {
+                            sign = -1;
+                            continue;
+                        }
+                        if (isPlus(exp)) {
+                            sign = 1;
+                            continue;
+                        }
+                        Polynomial p = eval(exp);
+                        result = result.add(p.multiply(sign));
+                    }
+                } else {
+                    result = Polynomial.ONE;
+                    for (Expr exp : exprs.getExprs()) {
+                        if (isOperator(exp)) {
+                            continue;
+                        }
+                        Polynomial p = eval(exp);
+                        result = result.multiply(p);
+                    }
+                }
+                yield result;
+            }
+            case ListExpr listExpr -> {
+                if (listExpr.value.size() == 1) {
+                    yield eval(listExpr.value().getFirst());
+                }
+                Expr exprs = Macro.applyStarMacro(listExpr.value);
+                if (exprs.size() == 1) {
+                    yield eval(exprs.getFirst());
+                }
+                Polynomial result;
+                if (hasPlus(exprs)) {
+                    result = Polynomial.ZERO;
+                    int sign = 1;
+                    for (Expr exp : exprs.getExprs()) {
+                        if (isMinus(exp)) {
+                            sign = -1;
+                            continue;
+                        }
+                        if (isPlus(exp)) {
+                            sign = 1;
+                            continue;
+                        }
+                        Polynomial p = eval(exp);
+                        result = result.add(p.multiply(sign));
+                    }
+                } else {
+                    result = Polynomial.ONE;
+                    for (Expr exp : exprs.getExprs()) {
                         if (isOperator(exp)) {
                             continue;
                         }
@@ -202,8 +324,8 @@ public final class Parser {
         return expr instanceof MinusExpr;
     }
 
-    private static boolean hasPlus(List<Expr> exprs) {
-        for (Expr expr : exprs) {
+    private static boolean hasPlus(Expr exprs) {
+        for (Expr expr : exprs.getExprs()) {
             if (expr instanceof PlusExpr || expr instanceof MinusExpr) {
                 return true;
             }
@@ -211,22 +333,109 @@ public final class Parser {
         return false;
     }
 
+    public record MultListExpr(List<Expr> value) implements Expr {
+        public static MultListExpr of(Expr... value) {
+            return new MultListExpr(List.of(value));
+        }
+
+        @Override
+        public int size() {
+            return value().size();
+        }
+
+        @Override
+        public Expr getFirst() {
+            return value.getFirst();
+        }
+
+        @Override
+        public List<Expr> getExprs() {
+            return value;
+        }
+    }
+
+    public record PlusListExpr(List<Expr> value) implements Expr {
+        public static PlusListExpr of(Expr... value) {
+            return new PlusListExpr(List.of(value));
+        }
+
+
+        @Override
+        public int size() {
+            return value().size();
+        }
+
+        @Override
+        public Expr getFirst() {
+            return value.getFirst();
+        }
+
+        @Override
+        public List<Expr> getExprs() {
+            return value;
+        }
+    }
+
     public record ListExpr(List<Expr> value) implements Expr {
         public static ListExpr of(Expr... value) {
             return new ListExpr(List.of(value));
         }
 
+        @Override
+        public int size() {
+            return value().size();
+        }
+
+        @Override
+        public Expr getFirst() {
+            return value.getFirst();
+        }
+
+        @Override
+        public List<Expr> getExprs() {
+            return value;
+        }
     }
 
     public record NumberExpr(int value) implements Expr {
         public static NumberExpr of(int value) {
             return new NumberExpr(value);
         }
+
+        @Override
+        public int size() {
+            return 1;
+        }
+
+        @Override
+        public Expr getFirst() {
+            return this;
+        }
+
+        @Override
+        public List<Expr> getExprs() {
+            return List.of(this);
+        }
     }
 
     public record VarExp(String var, int exp) implements Expr {
         public static VarExp of(String var, int exp) {
             return new VarExp(var, exp);
+        }
+
+        @Override
+        public int size() {
+            return 1;
+        }
+
+        @Override
+        public Expr getFirst() {
+            return this;
+        }
+
+        @Override
+        public List<Expr> getExprs() {
+            return List.of(this);
         }
     }
 
