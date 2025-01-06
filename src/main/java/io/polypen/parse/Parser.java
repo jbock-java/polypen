@@ -192,40 +192,28 @@ public final class Parser {
     public static final Expr MULT = new MultExpr();
 
     public static Polynomial eval(Expr expr) {
-        return switch (expr) {
+        Expr exprs = Macro.applyStarMacro(expr.getExprs());
+        return switch (exprs) {
             case PlusListExpr listExpr -> {
                 if (listExpr.value.size() == 1) {
                     yield eval(listExpr.value().getFirst());
                 }
-                Expr exprs = Macro.applyStarMacro(listExpr.value);
                 if (exprs.size() == 1) {
                     yield eval(exprs.getFirst());
                 }
-                Polynomial result;
-                if (hasPlus(exprs)) {
-                    result = Polynomial.ZERO;
-                    int sign = 1;
-                    for (Expr exp : exprs.getExprs()) {
-                        if (isMinus(exp)) {
-                            sign = -1;
-                            continue;
-                        }
-                        if (isPlus(exp)) {
-                            sign = 1;
-                            continue;
-                        }
-                        Polynomial p = eval(exp);
-                        result = result.add(p.multiply(sign));
+                Polynomial result = Polynomial.ZERO;
+                int sign = 1;
+                for (Expr exp : exprs.getExprs()) {
+                    if (isMinus(exp)) {
+                        sign = -1;
+                        continue;
                     }
-                } else {
-                    result = Polynomial.ONE;
-                    for (Expr exp : exprs.getExprs()) {
-                        if (isOperator(exp)) {
-                            continue;
-                        }
-                        Polynomial p = eval(exp);
-                        result = result.multiply(p);
+                    if (isPlus(exp)) {
+                        sign = 1;
+                        continue;
                     }
+                    Polynomial p = eval(exp);
+                    result = result.add(p.multiply(sign));
                 }
                 yield result;
             }
@@ -233,71 +221,17 @@ public final class Parser {
                 if (listExpr.value.size() == 1) {
                     yield eval(listExpr.value().getFirst());
                 }
-                Expr exprs = Macro.applyStarMacro(listExpr.value);
                 if (exprs.size() == 1) {
                     yield eval(exprs.getFirst());
                 }
                 Polynomial result;
-                if (hasPlus(exprs)) {
-                    result = Polynomial.ZERO;
-                    int sign = 1;
-                    for (Expr exp : exprs.getExprs()) {
-                        if (isMinus(exp)) {
-                            sign = -1;
-                            continue;
-                        }
-                        if (isPlus(exp)) {
-                            sign = 1;
-                            continue;
-                        }
-                        Polynomial p = eval(exp);
-                        result = result.add(p.multiply(sign));
+                result = Polynomial.ONE;
+                for (Expr exp : exprs.getExprs()) {
+                    if (isOperator(exp)) {
+                        continue;
                     }
-                } else {
-                    result = Polynomial.ONE;
-                    for (Expr exp : exprs.getExprs()) {
-                        if (isOperator(exp)) {
-                            continue;
-                        }
-                        Polynomial p = eval(exp);
-                        result = result.multiply(p);
-                    }
-                }
-                yield result;
-            }
-            case ListExpr listExpr -> {
-                if (listExpr.value.size() == 1) {
-                    yield eval(listExpr.value().getFirst());
-                }
-                Expr exprs = Macro.applyStarMacro(listExpr.value);
-                if (exprs.size() == 1) {
-                    yield eval(exprs.getFirst());
-                }
-                Polynomial result;
-                if (hasPlus(exprs)) {
-                    result = Polynomial.ZERO;
-                    int sign = 1;
-                    for (Expr exp : exprs.getExprs()) {
-                        if (isMinus(exp)) {
-                            sign = -1;
-                            continue;
-                        }
-                        if (isPlus(exp)) {
-                            sign = 1;
-                            continue;
-                        }
-                        Polynomial p = eval(exp);
-                        result = result.add(p.multiply(sign));
-                    }
-                } else {
-                    result = Polynomial.ONE;
-                    for (Expr exp : exprs.getExprs()) {
-                        if (isOperator(exp)) {
-                            continue;
-                        }
-                        Polynomial p = eval(exp);
-                        result = result.multiply(p);
-                    }
+                    Polynomial p = eval(exp);
+                    result = result.multiply(p);
                 }
                 yield result;
             }

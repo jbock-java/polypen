@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import static io.polypen.parse.Macro.applyStarMacro;
 import static io.polypen.parse.Parser.Expr;
 import static io.polypen.parse.Parser.ListExpr;
+import static io.polypen.parse.Parser.MINUS;
 import static io.polypen.parse.Parser.MULT;
 import static io.polypen.parse.Parser.MultListExpr;
 import static io.polypen.parse.Parser.NumberExpr;
@@ -81,6 +82,17 @@ class ParserTest {
         assertEquals(
                 MultListExpr.of(
                         NumberExpr.of(1), MULT, NumberExpr.of(2)),
+                expanded);
+    }
+
+    @Test
+    void starMacro8() {
+        ListExpr result = parse("-(x - 1)");
+        Expr expanded = applyStarMacro(result.value());
+        assertEquals(
+                PlusListExpr.of(
+                        MINUS,
+                        PlusListExpr.of(VarExp.of("x", 1), MINUS, NumberExpr.of(1))),
                 expanded);
     }
 

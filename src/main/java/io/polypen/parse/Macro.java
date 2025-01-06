@@ -14,6 +14,9 @@ import java.util.List;
 public class Macro {
 
     static Expr applyStarMacro(List<Expr> exprs) {
+        if (exprs.size() == 1) {
+            return expandRecursively(exprs.getFirst());
+        }
         List<Expr> exprsCopy = new ArrayList<>(exprs.size());
         List<Expr> region = new ArrayList<>(exprs.size());
         Expr previous = null;
@@ -32,11 +35,8 @@ public class Macro {
             previous = expandRecursively(expr);
         }
         if (exprsCopy.isEmpty()) {
-            List<Expr> mapped = new ArrayList<>();
-            for (Expr expr : exprs) {
-                mapped.add(expandRecursively(expr));
-            }
-            return new MultListExpr(mapped);
+            region.add(expandRecursively(previous));
+            return new MultListExpr(region);
         }
         if (region.isEmpty()) {
             exprsCopy.add(expandRecursively(previous));
@@ -48,6 +48,9 @@ public class Macro {
     }
 
     private static Expr expandRecursively(Expr expr) {
+        if (expr == null) {
+            return null;
+        }
         return switch (expr) {
             case ListExpr x -> applyStarMacro(x.value());
             default -> expr;
