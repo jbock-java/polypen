@@ -2,12 +2,15 @@ package io.polypen.parse;
 
 import io.polypen.Monomial;
 import io.polypen.Polynomial;
+import io.polypen.parse.Parser.BindingMinusExpr;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static io.polypen.parse.Macro.applyStarMacro;
+import static io.polypen.parse.Macro.minusMacro;
 import static io.polypen.parse.Parser.Expr;
 import static io.polypen.parse.Parser.ListExpr;
-import static io.polypen.parse.Parser.MINUS;
 import static io.polypen.parse.Parser.MULT;
 import static io.polypen.parse.Parser.MultListExpr;
 import static io.polypen.parse.Parser.NumberExpr;
@@ -33,7 +36,7 @@ class ParserTest {
         ListExpr result = parse("1 + 2 * 3");
         Expr expanded = applyStarMacro(result.value());
         assertEquals(PlusListExpr.of(
-                        NumberExpr.of(1), PLUS, MultListExpr.of(NumberExpr.of(2), MULT, NumberExpr.of(3))),
+                        NumberExpr.of(1), MultListExpr.of(NumberExpr.of(2), NumberExpr.of(3))),
                 expanded);
     }
 
@@ -42,7 +45,7 @@ class ParserTest {
         ListExpr result = parse("1 + 2 * 3 * 4");
         Expr expanded = applyStarMacro(result.value());
         assertEquals(PlusListExpr.of(
-                        NumberExpr.of(1), PLUS, MultListExpr.of(NumberExpr.of(2), MULT, NumberExpr.of(3), MULT, NumberExpr.of(4))),
+                        NumberExpr.of(1), MultListExpr.of(NumberExpr.of(2), NumberExpr.of(3), NumberExpr.of(4))),
                 expanded);
     }
 
@@ -51,7 +54,7 @@ class ParserTest {
         ListExpr result = parse("2 * 3 * 4");
         Expr expanded = applyStarMacro(result.value());
         assertEquals(
-                MultListExpr.of(NumberExpr.of(2), MULT, NumberExpr.of(3), MULT, NumberExpr.of(4)),
+                MultListExpr.of(2, 3, 4),
                 expanded);
     }
 
@@ -60,7 +63,7 @@ class ParserTest {
         ListExpr result = parse("1 + 2 * 3 + 4");
         Expr expanded = applyStarMacro(result.value());
         assertEquals(PlusListExpr.of(
-                        NumberExpr.of(1), PLUS, MultListExpr.of(NumberExpr.of(2), MULT, NumberExpr.of(3)), PLUS, NumberExpr.of(4)),
+                        NumberExpr.of(1), MultListExpr.of(2, 3), NumberExpr.of(4)),
                 expanded);
     }
 
@@ -70,8 +73,7 @@ class ParserTest {
         Expr expanded = applyStarMacro(result.value());
         assertEquals(
                 MultListExpr.of(
-                        PlusListExpr.of(NumberExpr.of(1), PLUS, NumberExpr.of(2)),
-                        MULT, NumberExpr.of(3)),
+                        PlusListExpr.of(NumberExpr.of(1), NumberExpr.of(2)), NumberExpr.of(3)),
                 expanded);
     }
 
@@ -81,18 +83,18 @@ class ParserTest {
         Expr expanded = applyStarMacro(result.value());
         assertEquals(
                 MultListExpr.of(
-                        NumberExpr.of(1), MULT, NumberExpr.of(2)),
+                        NumberExpr.of(1), NumberExpr.of(2)),
                 expanded);
     }
 
     @Test
     void starMacro8() {
         ListExpr result = parse("-(x - 1)");
-        Expr expanded = applyStarMacro(result.value());
+        List<Expr> exprs = minusMacro(result).getExprs();
+        Expr expanded = applyStarMacro(exprs);
         assertEquals(
-                PlusListExpr.of(
-                        MINUS,
-                        PlusListExpr.of(VarExp.of("x", 1), MINUS, NumberExpr.of(1))),
+                BindingMinusExpr.of(
+                        PlusListExpr.of(VarExp.of("x", 1), BindingMinusExpr.of(NumberExpr.of(1)))),
                 expanded);
     }
 
@@ -102,8 +104,8 @@ class ParserTest {
         Expr expanded = applyStarMacro(result.value());
         assertEquals(
                 MultListExpr.of(
-                        NumberExpr.of(1), MULT,
-                        PlusListExpr.of(NumberExpr.of(2), PLUS, NumberExpr.of(3))),
+                        NumberExpr.of(1),
+                        PlusListExpr.of(NumberExpr.of(2), NumberExpr.of(3))),
                 expanded);
         Polynomial polynomial = eval(result);
         assertEquals(Monomial.constant(5).polynomial(), polynomial);

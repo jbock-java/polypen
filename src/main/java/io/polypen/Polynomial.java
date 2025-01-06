@@ -46,7 +46,7 @@ public final class Polynomial {
     public Polynomial multiply(int factor) {
         List<Integer> newCoefficients = new ArrayList<>(coefficients.size());
         for (Integer coefficient : coefficients) {
-            newCoefficients.add(coefficient * (factor));
+            newCoefficients.add(coefficient * factor);
         }
         return new Polynomial(newCoefficients);
     }

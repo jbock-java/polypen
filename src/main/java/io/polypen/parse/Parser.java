@@ -9,6 +9,7 @@ import java.io.InputStreamReader;
 import java.io.PushbackReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.IntStream;
 
 public final class Parser {
 
@@ -111,7 +112,7 @@ public final class Parser {
         }
     }
 
-    public sealed interface Expr permits PlusExpr, MinusExpr, MultExpr, ListExpr, NumberExpr, VarExp, PlusListExpr, MultListExpr {
+    public sealed interface Expr permits PlusExpr, MinusExpr, MultExpr, ListExpr, NumberExpr, VarExp, PlusListExpr, MultListExpr, BindingMinusExpr {
         int size();
 
         Expr getFirst();
@@ -127,17 +128,17 @@ public final class Parser {
 
         @Override
         public int size() {
-            return 0;
+            return 1;
         }
 
         @Override
         public Expr getFirst() {
-            return null;
+            return this;
         }
 
         @Override
         public List<Expr> getExprs() {
-            return List.of();
+            return List.of(this);
         }
     }
 
@@ -151,17 +152,17 @@ public final class Parser {
 
         @Override
         public int size() {
-            return 0;
+            return 1;
         }
 
         @Override
         public Expr getFirst() {
-            return null;
+            return this;
         }
 
         @Override
         public List<Expr> getExprs() {
-            return List.of();
+            return List.of(this);
         }
     }
 
@@ -175,54 +176,56 @@ public final class Parser {
 
         @Override
         public int size() {
-            return 0;
+            return 1;
         }
 
         @Override
         public Expr getFirst() {
-            return null;
+            return this;
         }
 
         @Override
         public List<Expr> getExprs() {
-            return List.of();
+            return List.of(this);
         }
     }
 
     public static final Expr MULT = new MultExpr();
 
     public static Polynomial eval(Expr expr) {
-        Expr exprs = Macro.applyStarMacro(expr.getExprs());
+        List<Expr> expanded = Macro.minusMacro(expr).getExprs();
+        Expr exprs = Macro.applyStarMacro(expanded);
+        return _eval(exprs);
+    }
+
+    private static Polynomial _eval(Expr exprs) {
         return switch (exprs) {
             case PlusListExpr listExpr -> {
                 if (listExpr.value.size() == 1) {
-                    yield eval(listExpr.value().getFirst());
+                    yield _eval(listExpr.value().getFirst());
                 }
                 if (exprs.size() == 1) {
-                    yield eval(exprs.getFirst());
+                    yield _eval(exprs.getFirst());
                 }
                 Polynomial result = Polynomial.ZERO;
-                int sign = 1;
                 for (Expr exp : exprs.getExprs()) {
                     if (isMinus(exp)) {
-                        sign = -1;
                         continue;
                     }
                     if (isPlus(exp)) {
-                        sign = 1;
                         continue;
                     }
-                    Polynomial p = eval(exp);
-                    result = result.add(p.multiply(sign));
+                    Polynomial p = _eval(exp);
+                    result = result.add(p);
                 }
                 yield result;
             }
             case MultListExpr listExpr -> {
                 if (listExpr.value.size() == 1) {
-                    yield eval(listExpr.value().getFirst());
+                    yield _eval(listExpr.value().getFirst());
                 }
                 if (exprs.size() == 1) {
-                    yield eval(exprs.getFirst());
+                    yield _eval(exprs.getFirst());
                 }
                 Polynomial result;
                 result = Polynomial.ONE;
@@ -230,14 +233,15 @@ public final class Parser {
                     if (isOperator(exp)) {
                         continue;
                     }
-                    Polynomial p = eval(exp);
+                    Polynomial p = _eval(exp);
                     result = result.multiply(p);
                 }
                 yield result;
             }
             case NumberExpr numberExpr -> new Monomial(numberExpr.value, 0).polynomial();
             case VarExp varExp -> new Monomial(1, varExp.exp).polynomial();
-            default -> throw new IllegalStateException(expr.toString());
+            case BindingMinusExpr minEx -> _eval(minEx.expr).multiply(-1);
+            default -> throw new IllegalStateException(exprs.toString());
         };
     }
 
@@ -258,18 +262,34 @@ public final class Parser {
         return expr instanceof MinusExpr;
     }
 
-    private static boolean hasPlus(Expr exprs) {
-        for (Expr expr : exprs.getExprs()) {
-            if (expr instanceof PlusExpr || expr instanceof MinusExpr) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     public record MultListExpr(List<Expr> value) implements Expr {
+        public static MultListExpr create(int capacity) {
+            return new MultListExpr(new ArrayList<>(capacity));
+        }
+
         public static MultListExpr of(Expr... value) {
             return new MultListExpr(List.of(value));
+        }
+
+        public static MultListExpr of(int... value) {
+            List<Expr> list = IntStream.of(value).mapToObj(NumberExpr::of).map(s -> (Expr) s).toList();
+            return new MultListExpr(list);
+        }
+
+        public void add(Expr expr) {
+            addIfNotOperator(value, expr);
+        }
+
+        public MultListExpr copy() {
+            return new MultListExpr(List.copyOf(value));
+        }
+
+        public void clear() {
+            value.clear();
+        }
+
+        public boolean isEmpty() {
+            return value.isEmpty();
         }
 
         @Override
@@ -288,11 +308,49 @@ public final class Parser {
         }
     }
 
+    private static void addIfNotOperator(List<Expr> exprs, Expr expr) {
+        if (!isOperator(expr)) {
+            exprs.add(expr);
+        }
+    }
+
+    public record BindingMinusExpr(Expr expr) implements Expr {
+        public static BindingMinusExpr of(Expr expr) {
+            return new BindingMinusExpr(expr);
+        }
+
+        @Override
+        public int size() {
+            return 1;
+        }
+
+        @Override
+        public Expr getFirst() {
+            return expr;
+        }
+
+        @Override
+        public List<Expr> getExprs() {
+            return List.of(expr);
+        }
+    }
+
     public record PlusListExpr(List<Expr> value) implements Expr {
+        public static PlusListExpr create(int capacity) {
+            return new PlusListExpr(new ArrayList<>(capacity));
+        }
+
         public static PlusListExpr of(Expr... value) {
             return new PlusListExpr(List.of(value));
         }
 
+        public void add(Expr expr) {
+            addIfNotOperator(value, expr);
+        }
+
+        public boolean isEmpty() {
+            return value.isEmpty();
+        }
 
         @Override
         public int size() {
