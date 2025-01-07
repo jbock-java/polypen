@@ -9,6 +9,8 @@ import java.io.InputStreamReader;
 import java.io.PushbackReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public final class Parser {
@@ -271,6 +273,11 @@ public final class Parser {
             return new MultListExpr(List.of(value));
         }
 
+        @Override
+        public String toString() {
+            return value.stream().map(Objects::toString).collect(Collectors.joining(" ", "(* ", ")"));
+        }
+
         public static MultListExpr of(int... value) {
             List<Expr> list = IntStream.of(value).mapToObj(NumberExpr::of).map(s -> (Expr) s).toList();
             return new MultListExpr(list);
@@ -320,6 +327,11 @@ public final class Parser {
         }
 
         @Override
+        public String toString() {
+            return "-" + expr;
+        }
+
+        @Override
         public int size() {
             return 1;
         }
@@ -338,6 +350,11 @@ public final class Parser {
     public record PlusListExpr(List<Expr> value) implements Expr {
         public static PlusListExpr create(int capacity) {
             return new PlusListExpr(new ArrayList<>(capacity));
+        }
+
+        @Override
+        public String toString() {
+            return value.stream().map(Objects::toString).collect(Collectors.joining(" ", "(+ ", ")"));
         }
 
         public static PlusListExpr of(Expr... value) {
@@ -395,6 +412,11 @@ public final class Parser {
         }
 
         @Override
+        public String toString() {
+            return Integer.toString(value);
+        }
+
+        @Override
         public int size() {
             return 1;
         }
@@ -413,6 +435,14 @@ public final class Parser {
     public record VarExp(String var, int exp) implements Expr {
         public static VarExp of(String var, int exp) {
             return new VarExp(var, exp);
+        }
+
+        @Override
+        public String toString() {
+            if (exp == 1) {
+                return var;
+            }
+            return var + "^" + exp;
         }
 
         @Override

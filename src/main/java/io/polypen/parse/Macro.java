@@ -16,7 +16,7 @@ import java.util.List;
 
 public class Macro {
 
-    static Expr minusMacro(Expr exprs) {
+    public static Expr minusMacro(Expr exprs) {
         if (exprs.size() == 1) {
             return exprs;
         }
@@ -51,7 +51,7 @@ public class Macro {
         };
     }
 
-    static Expr applyStarMacro(List<Expr> exprs) {
+    public static Expr applyStarMacro(List<Expr> exprs) {
         if (exprs.size() == 1) {
             return expandRecursively(exprs.getFirst());
         }
@@ -59,7 +59,7 @@ public class Macro {
         MultListExpr region = MultListExpr.create(exprs.size());
         Expr previous = null;
         for (Expr expr : exprs) {
-            if (isStrongBind(previous) && (isStrongBind(expr) || !region.isEmpty())) {
+            if (isStrongBind(previous) && (isRightBind(expr) || !region.isEmpty())) {
                 region.add(previous);
             } else {
                 if (!region.isEmpty()) {
@@ -96,19 +96,34 @@ public class Macro {
         };
     }
 
+    public static boolean isStrongBind(Expr left, Expr right) {
+        if (left == null) {
+            return false;
+        }
+        return switch (left) {
+            case ListExpr ignored -> !(right instanceof BindingMinusExpr);
+            case PlusListExpr ignored -> !(right instanceof BindingMinusExpr);
+            case MultListExpr ignored -> !(right instanceof BindingMinusExpr);
+            case MultExpr ignored -> true;
+            case NumberExpr ignored -> !(right instanceof BindingMinusExpr);
+            case VarExp ignored -> !(right instanceof BindingMinusExpr);
+            case BindingMinusExpr ignored -> !(right instanceof BindingMinusExpr);
+            case PlusExpr ignored -> false;
+            case MinusExpr ignored -> false;
+        };
+    }
+
+    public static boolean isRightBind(Expr expr) {
+        if (expr == null) {
+            return false;
+        }
+        return !(expr instanceof BindingMinusExpr) && !(expr instanceof PlusExpr);
+    }
+
     public static boolean isStrongBind(Expr expr) {
         if (expr == null) {
             return false;
         }
-        return switch (expr) {
-            case ListExpr ignored -> true;
-            case PlusListExpr ignored -> true;
-            case MultListExpr ignored -> true;
-            case MultExpr ignored -> true;
-            case NumberExpr ignored -> true;
-            case VarExp ignored -> true;
-            case BindingMinusExpr ignored -> true;
-            default -> false;
-        };
+        return !(expr instanceof PlusExpr);
     }
 }

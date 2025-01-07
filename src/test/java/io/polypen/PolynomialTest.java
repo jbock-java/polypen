@@ -1,8 +1,13 @@
 package io.polypen;
 
+import io.polypen.parse.Macro;
+import io.polypen.parse.Parser;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static io.polypen.Polynomial.parse;
+import static io.polypen.parse.Parser.eval;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class PolynomialTest {
@@ -30,8 +35,40 @@ class PolynomialTest {
 
     @Test
     void monomialMultiplication() {
-        assertEquals(parse("2x^6 - 4x^2 - 2x"),
-                new Monomial(2, 1).multiply(parse("x^5 - 2x - 1")));
+        Parser.ListExpr p = Parser.parse("2x^6 - 4x^2 - 2x");
+        System.out.println(p);
+        List<Parser.Expr> minused = Macro.minusMacro(p).getExprs();
+        System.out.println(minused);
+        for (int i = 0; i < minused.size(); i++) {
+            Parser.Expr expr = minused.get(i);
+            System.out.println(i + ": " + expr);
+        }
+        Parser.Expr x = Macro.applyStarMacro(minused);
+        System.out.println(x);
+        for (int i = 0; i < x.getExprs().size(); i++) {
+            Parser.Expr expr = x.getExprs().get(i);
+            System.out.println(i + ": " + expr);
+        }
+        assertEquals(eval(p), new Monomial(2, 1).multiply(parse("x^5 - 2x - 1")));
+    }
+
+    @Test
+    void monomialMultiplication2() {
+        Parser.ListExpr p = Parser.parse("2x - 1");
+        System.out.println(p);
+        List<Parser.Expr> minused = Macro.minusMacro(p).getExprs();
+        System.out.println(minused);
+        for (int i = 0; i < minused.size(); i++) {
+            Parser.Expr expr = minused.get(i);
+            System.out.println(i + ": " + expr);
+        }
+        Parser.Expr x = Macro.applyStarMacro(minused);
+        System.out.println(x);
+        for (int i = 0; i < x.getExprs().size(); i++) {
+            Parser.Expr expr = x.getExprs().get(i);
+            System.out.println(i + ": " + expr);
+        }
+        System.out.println(eval(p));
     }
 
     @Test
