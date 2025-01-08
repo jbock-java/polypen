@@ -1,8 +1,11 @@
 package io.polypen;
 
+import io.polypen.parse.Parser;
+import io.polypen.parse.Parser.ListExpr;
 import org.junit.jupiter.api.Test;
 
 import static io.polypen.Polynomial.parse;
+import static io.polypen.parse.Parser.eval;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class PolynomialTest {
@@ -30,8 +33,26 @@ class PolynomialTest {
 
     @Test
     void monomialMultiplication() {
-        assertEquals(parse("2x^6 - 4x^2 - 2x"),
-                new Monomial(2, 1).multiply(parse("x^5 - 2x - 1")));
+        ListExpr p = Parser.parse("2x^6 - 4x^2 - 2x");
+        assertEquals(new Monomial(2, 1).multiply(parse("x^5 - 2x - 1")),
+                eval(p));
+    }
+
+    @Test
+    void monomialMultiplication2() {
+        ListExpr p = Parser.parse("2x - 1");
+        assertEquals(new Monomial(2, 1).polynomial()
+                        .add(new Monomial(-1, 0).polynomial()),
+                eval(p));
+    }
+
+    @Test
+    void monomialMultiplication3() {
+        ListExpr p = Parser.parse("2x^2 - x - 1");
+        assertEquals(new Monomial(2, 2).polynomial()
+                        .add(new Monomial(-1, 1).polynomial())
+                        .add(new Monomial(-1, 0).polynomial()),
+                eval(p));
     }
 
     @Test
