@@ -2,13 +2,9 @@ package io.polypen.parse;
 
 import io.polypen.Monomial;
 import io.polypen.Polynomial;
-import io.polypen.parse.Parser.BindingMinusExpr;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-
 import static io.polypen.parse.Macro.applyStarMacro;
-import static io.polypen.parse.Macro.minusMacro;
 import static io.polypen.parse.Parser.Expr;
 import static io.polypen.parse.Parser.ListExpr;
 import static io.polypen.parse.Parser.MULT;
@@ -90,11 +86,12 @@ class ParserTest {
     @Test
     void starMacro8() {
         ListExpr result = parse("-(x - 1)");
-        List<Expr> exprs = minusMacro(result).getExprs();
-        Expr expanded = applyStarMacro(exprs);
+        Expr expanded = applyStarMacro(result.getExprs());
         assertEquals(
-                BindingMinusExpr.of(
-                        PlusListExpr.of(VarExp.of("x", 1), BindingMinusExpr.of(NumberExpr.of(1)))),
+                MultListExpr.of(
+                        NumberExpr.of(-1),
+                        PlusListExpr.of(VarExp.of("x", 1),
+                                MultListExpr.of(-1, 1))),
                 expanded);
     }
 

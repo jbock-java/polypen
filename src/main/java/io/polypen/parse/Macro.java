@@ -1,37 +1,21 @@
 package io.polypen.parse;
 
-import io.polypen.parse.Parser.BindingMinusExpr;
 import io.polypen.parse.Parser.Expr;
 import io.polypen.parse.Parser.ListExpr;
 import io.polypen.parse.Parser.MinusExpr;
 import io.polypen.parse.Parser.MultExpr;
 import io.polypen.parse.Parser.MultListExpr;
+import io.polypen.parse.Parser.NumberExpr;
 import io.polypen.parse.Parser.PlusExpr;
 import io.polypen.parse.Parser.PlusListExpr;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class Macro {
 
-    public static Expr minusMacro(Expr exprs) {
-        if (exprs.size() == 1) {
-            return exprs;
-        }
-        Expr previous = null;
-        List<Expr> result = new ArrayList<>(exprs.size());
-        for (Expr expr : exprs.getExprs()) {
-            if (previous instanceof MinusExpr) {
-                result.add(BindingMinusExpr.of(minusMacro(expr)));
-            } else {
-                if (!(expr instanceof MinusExpr)) {
-                    result.add(minusMacro(expr));
-                }
-            }
-            previous = expr;
-        }
-        return new ListExpr(result);
-    }
+    public static final int B_STRONG = 4;
+    public static final int B_MINUSBOUND = 16;
+    public static final int B_END = 1;
 
     public static Expr applyStarMacro(List<Expr> exprs) {
         if (exprs.size() == 1) {
@@ -44,35 +28,47 @@ public class Macro {
             Expr left = exprs.get(i);
             Expr right = exprs.get(i + 1);
             if (isStrong(left, right)) {
-                bound[i] = 1;
-                bound[i + 1] = 1;
-            } else {
-                bound[i] *= 2;
+                bound[i] |= B_STRONG;
+                bound[i + 1] |= B_STRONG;
+                if (left instanceof MinusExpr) {
+                    bound[i + 1] |= B_MINUSBOUND;
+                }
+            } else if ((bound[i] & B_STRONG) != 0) {
+                bound[i] |= B_END;
             }
         }
         for (int i = 0; i < exprs.size(); i++) {
             Expr expr = exprs.get(i);
-            if (bound[i] == 1) {
-                region.add(expandRecursively(expr));
-            } else if (bound[i] == 2) {
-                region.add(expandRecursively(expr));
-                exprsCopy.add(region.copy());
-                region.clear();
+            int b = bound[i];
+            if ((b & B_STRONG) != 0) {
+                if ((b & B_MINUSBOUND) != 0) {
+                    region.add(MultListExpr.of(NumberExpr.of(-1), expandRecursively(expr)));
+                } else {
+                    region.add(expandRecursively(expr));
+                }
+                if ((b & B_END) != 0) {
+                    exprsCopy.add(unwrap(region.copy()));
+                    region.clear();
+                }
             } else {
                 if (!region.isEmpty()) {
-                    exprsCopy.add(region.copy());
+                    exprsCopy.add(unwrap(region.copy()));
                     region.clear();
                 }
                 exprsCopy.add(expandRecursively(expr));
             }
         }
         if (exprsCopy.isEmpty()) {
-            return region;
+            return unwrap(region);
         }
         if (!region.isEmpty()) {
-            exprsCopy.add(region);
+            exprsCopy.add(unwrap(region));
         }
         return exprsCopy;
+    }
+
+    private static Expr unwrap(MultListExpr expr) {
+        return expr.size() == 1 ? expr.getFirst() : expr;
     }
 
     private static Expr expandRecursively(Expr expr) {
@@ -81,7 +77,6 @@ public class Macro {
         }
         return switch (expr) {
             case ListExpr x -> applyStarMacro(x.value());
-            case BindingMinusExpr x -> BindingMinusExpr.of(expandRecursively(x.expr()));
             default -> expr;
         };
     }
@@ -93,7 +88,10 @@ public class Macro {
         if (left instanceof PlusExpr || right instanceof PlusExpr) {
             return false;
         }
-        if (right instanceof BindingMinusExpr) {
+        if (left instanceof MinusExpr) {
+            return true;
+        }
+        if (right instanceof MinusExpr) {
             return false;
         }
         return true;

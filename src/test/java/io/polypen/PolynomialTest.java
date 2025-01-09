@@ -1,8 +1,11 @@
 package io.polypen;
 
+import io.polypen.parse.Macro;
 import io.polypen.parse.Parser;
 import io.polypen.parse.Parser.ListExpr;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 import static io.polypen.Polynomial.parse;
 import static io.polypen.parse.Parser.eval;
@@ -41,6 +44,11 @@ class PolynomialTest {
     @Test
     void monomialMultiplication2() {
         ListExpr p = Parser.parse("2x - 1");
+        List<Parser.Expr> exprs = Macro.applyStarMacro(p.getExprs()).getExprs();
+        for (int i = 0; i < exprs.size(); i++) {
+            Parser.Expr expr = exprs.get(i);
+            System.out.println(i + ": " + expr);
+        }
         assertEquals(new Monomial(2, 1).polynomial()
                         .add(new Monomial(-1, 0).polynomial()),
                 eval(p));

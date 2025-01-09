@@ -114,7 +114,7 @@ public final class Parser {
         }
     }
 
-    public sealed interface Expr permits PlusExpr, MinusExpr, MultExpr, ListExpr, NumberExpr, VarExp, PlusListExpr, MultListExpr, BindingMinusExpr {
+    public sealed interface Expr permits PlusExpr, MinusExpr, MultExpr, ListExpr, NumberExpr, VarExp, PlusListExpr, MultListExpr {
         int size();
 
         Expr getFirst();
@@ -195,8 +195,7 @@ public final class Parser {
     public static final Expr MULT = new MultExpr();
 
     public static Polynomial eval(Expr expr) {
-        List<Expr> expanded = Macro.minusMacro(expr).getExprs();
-        Expr exprs = Macro.applyStarMacro(expanded);
+        Expr exprs = Macro.applyStarMacro(expr.getExprs());
         return _eval(exprs);
     }
 
@@ -242,7 +241,6 @@ public final class Parser {
             }
             case NumberExpr numberExpr -> new Monomial(numberExpr.value, 0).polynomial();
             case VarExp varExp -> new Monomial(1, varExp.exp).polynomial();
-            case BindingMinusExpr minEx -> _eval(minEx.expr).multiply(-1);
             default -> throw new IllegalStateException(exprs.toString());
         };
     }
@@ -318,32 +316,6 @@ public final class Parser {
     private static void addIfNotOperator(List<Expr> exprs, Expr expr) {
         if (!isOperator(expr)) {
             exprs.add(expr);
-        }
-    }
-
-    public record BindingMinusExpr(Expr expr) implements Expr {
-        public static BindingMinusExpr of(Expr expr) {
-            return new BindingMinusExpr(expr);
-        }
-
-        @Override
-        public String toString() {
-            return "-" + expr;
-        }
-
-        @Override
-        public int size() {
-            return 1;
-        }
-
-        @Override
-        public Expr getFirst() {
-            return expr;
-        }
-
-        @Override
-        public List<Expr> getExprs() {
-            return List.of(expr);
         }
     }
 
