@@ -5,13 +5,13 @@ import io.polypen.Polynomial;
 import org.junit.jupiter.api.Test;
 
 import static io.polypen.parse.Macro.applyStarMacro;
-import static io.polypen.parse.Parser.Expr;
-import static io.polypen.parse.Parser.ListExpr;
+import static io.polypen.parse.Parser.Token;
+import static io.polypen.parse.Parser.ListToken;
 import static io.polypen.parse.Parser.MULT;
-import static io.polypen.parse.Parser.MultListExpr;
-import static io.polypen.parse.Parser.NumberExpr;
+import static io.polypen.parse.Parser.MultListToken;
+import static io.polypen.parse.Parser.NumberToken;
 import static io.polypen.parse.Parser.PLUS;
-import static io.polypen.parse.Parser.PlusListExpr;
+import static io.polypen.parse.Parser.PlusListToken;
 import static io.polypen.parse.Parser.VarExp;
 import static io.polypen.parse.Parser.eval;
 import static io.polypen.parse.Parser.parse;
@@ -21,88 +21,88 @@ class ParserTest {
 
     @Test
     void testParse() {
-        ListExpr result = parse("(a_1^12 + b12^2) * 2");
-        assertEquals(ListExpr.of(
-                        ListExpr.of(VarExp.of("a_1", 12), PLUS, VarExp.of("b12", 2)), MULT, NumberExpr.of(2)),
+        ListToken result = parse("(a_1^12 + b12^2) * 2");
+        assertEquals(ListToken.of(
+                        ListToken.of(VarExp.of("a_1", 12), PLUS, VarExp.of("b12", 2)), MULT, NumberToken.of(2)),
                 result);
     }
 
     @Test
     void starMacro1() {
-        ListExpr result = parse("1 + 2 * 3");
-        Expr expanded = applyStarMacro(result.value());
-        assertEquals(PlusListExpr.of(
-                        NumberExpr.of(1), MultListExpr.of(NumberExpr.of(2), NumberExpr.of(3))),
+        ListToken result = parse("1 + 2 * 3");
+        Token expanded = applyStarMacro(result.value());
+        assertEquals(PlusListToken.of(
+                        NumberToken.of(1), MultListToken.of(NumberToken.of(2), NumberToken.of(3))),
                 expanded);
     }
 
     @Test
     void starMacro5() {
-        ListExpr result = parse("1 + 2 * 3 * 4");
-        Expr expanded = applyStarMacro(result.value());
-        assertEquals(PlusListExpr.of(
-                        NumberExpr.of(1), MultListExpr.of(NumberExpr.of(2), NumberExpr.of(3), NumberExpr.of(4))),
+        ListToken result = parse("1 + 2 * 3 * 4");
+        Token expanded = applyStarMacro(result.value());
+        assertEquals(PlusListToken.of(
+                        NumberToken.of(1), MultListToken.of(NumberToken.of(2), NumberToken.of(3), NumberToken.of(4))),
                 expanded);
     }
 
     @Test
     void starMacro6() {
-        ListExpr result = parse("2 * 3 * 4");
-        Expr expanded = applyStarMacro(result.value());
+        ListToken result = parse("2 * 3 * 4");
+        Token expanded = applyStarMacro(result.value());
         assertEquals(
-                MultListExpr.of(2, 3, 4),
+                MultListToken.of(2, 3, 4),
                 expanded);
     }
 
     @Test
     void starMacro2() {
-        ListExpr result = parse("1 + 2 * 3 + 4");
-        Expr expanded = applyStarMacro(result.value());
-        assertEquals(PlusListExpr.of(
-                        NumberExpr.of(1), MultListExpr.of(2, 3), NumberExpr.of(4)),
+        ListToken result = parse("1 + 2 * 3 + 4");
+        Token expanded = applyStarMacro(result.value());
+        assertEquals(PlusListToken.of(
+                        NumberToken.of(1), MultListToken.of(2, 3), NumberToken.of(4)),
                 expanded);
     }
 
     @Test
     void starMacro3() {
-        ListExpr result = parse("(1 + 2) * 3");
-        Expr expanded = applyStarMacro(result.value());
+        ListToken result = parse("(1 + 2) * 3");
+        Token expanded = applyStarMacro(result.value());
         assertEquals(
-                MultListExpr.of(
-                        PlusListExpr.of(NumberExpr.of(1), NumberExpr.of(2)), NumberExpr.of(3)),
+                MultListToken.of(
+                        PlusListToken.of(NumberToken.of(1), NumberToken.of(2)), NumberToken.of(3)),
                 expanded);
     }
 
     @Test
     void starMacro7() {
-        ListExpr result = parse("1 * 2");
-        Expr expanded = applyStarMacro(result.value());
+        ListToken result = parse("1 * 2");
+        Token expanded = applyStarMacro(result.value());
         assertEquals(
-                MultListExpr.of(
-                        NumberExpr.of(1), NumberExpr.of(2)),
+                MultListToken.of(
+                        NumberToken.of(1), NumberToken.of(2)),
                 expanded);
     }
 
     @Test
     void starMacro8() {
-        ListExpr result = parse("-(x - 1)");
-        Expr expanded = applyStarMacro(result.getExprs());
+        ListToken result = parse("-(x - 1)");
+        Token expanded = applyStarMacro(result.getExprs());
         assertEquals(
-                MultListExpr.of(
-                        NumberExpr.of(-1),
-                        PlusListExpr.of(VarExp.of("x", 1),
-                                MultListExpr.of(-1, 1))),
+                MultListToken.of(
+                        NumberToken.of(-1),
+                        PlusListToken.of(VarExp.of("x", 1),
+                                MultListToken.of(-1, 1))),
                 expanded);
     }
 
     @Test
     void starMacro4() {
-        ListExpr result = parse("1 * (2 + 3)");
-        Expr expanded = applyStarMacro(result.value());
+        ListToken result = parse("1 * (2 + 3)");
+        Token expanded = applyStarMacro(result.value());
         assertEquals(
-                MultListExpr.of(
-                        NumberExpr.of(1),
-                        PlusListExpr.of(NumberExpr.of(2), NumberExpr.of(3))),
+                MultListToken.of(
+                        NumberToken.of(1),
+                        PlusListToken.of(NumberToken.of(2), NumberToken.of(3))),
                 expanded);
         Polynomial polynomial = eval(result);
         assertEquals(Monomial.constant(5).polynomial(), polynomial);

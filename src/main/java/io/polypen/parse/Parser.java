@@ -15,15 +15,15 @@ import java.util.stream.IntStream;
 
 public final class Parser {
 
-    private static ListExpr parse(PushbackReader reader) throws IOException {
+    private static ListToken parse(PushbackReader reader) throws IOException {
         consumeWhitespace(reader);
-        List<Expr> result = new ArrayList<>();
+        List<Token> result = new ArrayList<>();
         int c;
         loop:
         while ((c = reader.read()) != -1) {
             switch (c) {
                 case '(' -> {
-                    ListExpr expr = parse(reader);
+                    ListToken expr = parse(reader);
                     result.add(expr);
                 }
                 case ')' -> {
@@ -31,16 +31,16 @@ public final class Parser {
                 }
                 default -> {
                     reader.unread(c);
-                    Expr word = readWord(reader);
+                    Token word = readWord(reader);
                     result.add(word);
                 }
             }
             consumeWhitespace(reader);
         }
-        return new ListExpr(result);
+        return new ListToken(result);
     }
 
-    private static Expr readWord(PushbackReader reader) throws IOException {
+    private static Token readWord(PushbackReader reader) throws IOException {
         int c = reader.read();
         if (c == -1) {
             return null;
@@ -61,7 +61,7 @@ public final class Parser {
         return readVarExp(reader);
     }
 
-    private static NumberExpr readNumber(PushbackReader reader) throws IOException {
+    private static NumberToken readNumber(PushbackReader reader) throws IOException {
         StringBuilder sb = new StringBuilder();
         int c;
         while (Character.isDigit(c = reader.read())) {
@@ -70,7 +70,7 @@ public final class Parser {
         if (c != -1) {
             reader.unread(c);
         }
-        return new NumberExpr(Integer.parseInt(sb.toString()));
+        return new NumberToken(Integer.parseInt(sb.toString()));
     }
 
     private static VarExp readVarExp(PushbackReader reader) throws IOException {
@@ -85,7 +85,7 @@ public final class Parser {
             }
         }
         if (c == '^') {
-            NumberExpr expr = readNumber(reader);
+            NumberToken expr = readNumber(reader);
             return new VarExp(name.toString(), expr.value);
         }
         if (c != -1) {
@@ -106,7 +106,7 @@ public final class Parser {
         }
     }
 
-    public static ListExpr parse(String s) {
+    public static ListToken parse(String s) {
         try (PushbackReader reader = new PushbackReader(new InputStreamReader(new ByteArrayInputStream(s.getBytes())))) {
             return parse(reader);
         } catch (IOException e) {
@@ -114,15 +114,15 @@ public final class Parser {
         }
     }
 
-    public sealed interface Expr permits PlusExpr, MinusExpr, MultExpr, ListExpr, NumberExpr, VarExp, PlusListExpr, MultListExpr {
+    public sealed interface Token permits PlusToken, MinusToken, MultToken, ListToken, NumberToken, VarExp, PlusListToken, MultListToken {
         int size();
 
-        Expr getFirst();
+        Token getFirst();
 
-        List<Expr> getExprs();
+        List<Token> getExprs();
     }
 
-    public static final class PlusExpr implements Expr {
+    public static final class PlusToken implements Token {
         @Override
         public String toString() {
             return "+";
@@ -134,19 +134,19 @@ public final class Parser {
         }
 
         @Override
-        public Expr getFirst() {
+        public Token getFirst() {
             return this;
         }
 
         @Override
-        public List<Expr> getExprs() {
+        public List<Token> getExprs() {
             return List.of(this);
         }
     }
 
-    public static final Expr PLUS = new PlusExpr();
+    public static final Token PLUS = new PlusToken();
 
-    public static final class MinusExpr implements Expr {
+    public static final class MinusToken implements Token {
         @Override
         public String toString() {
             return "-";
@@ -158,19 +158,19 @@ public final class Parser {
         }
 
         @Override
-        public Expr getFirst() {
+        public Token getFirst() {
             return this;
         }
 
         @Override
-        public List<Expr> getExprs() {
+        public List<Token> getExprs() {
             return List.of(this);
         }
     }
 
-    public static final Expr MINUS = new MinusExpr();
+    public static final Token MINUS = new MinusToken();
 
-    public static final class MultExpr implements Expr {
+    public static final class MultToken implements Token {
         @Override
         public String toString() {
             return "*";
@@ -182,26 +182,26 @@ public final class Parser {
         }
 
         @Override
-        public Expr getFirst() {
+        public Token getFirst() {
             return this;
         }
 
         @Override
-        public List<Expr> getExprs() {
+        public List<Token> getExprs() {
             return List.of(this);
         }
     }
 
-    public static final Expr MULT = new MultExpr();
+    public static final Token MULT = new MultToken();
 
-    public static Polynomial eval(Expr expr) {
-        Expr exprs = Macro.applyStarMacro(expr.getExprs());
+    public static Polynomial eval(Token token) {
+        Token exprs = Macro.applyStarMacro(token.getExprs());
         return _eval(exprs);
     }
 
-    private static Polynomial _eval(Expr exprs) {
+    private static Polynomial _eval(Token exprs) {
         return switch (exprs) {
-            case PlusListExpr listExpr -> {
+            case PlusListToken listExpr -> {
                 if (listExpr.value.size() == 1) {
                     yield _eval(listExpr.value().getFirst());
                 }
@@ -209,7 +209,7 @@ public final class Parser {
                     yield _eval(exprs.getFirst());
                 }
                 Polynomial result = Polynomial.ZERO;
-                for (Expr exp : exprs.getExprs()) {
+                for (Token exp : exprs.getExprs()) {
                     if (isMinus(exp)) {
                         continue;
                     }
@@ -221,7 +221,7 @@ public final class Parser {
                 }
                 yield result;
             }
-            case MultListExpr listExpr -> {
+            case MultListToken listExpr -> {
                 if (listExpr.value.size() == 1) {
                     yield _eval(listExpr.value().getFirst());
                 }
@@ -230,7 +230,7 @@ public final class Parser {
                 }
                 Polynomial result;
                 result = Polynomial.ONE;
-                for (Expr exp : exprs.getExprs()) {
+                for (Token exp : exprs.getExprs()) {
                     if (isOperator(exp)) {
                         continue;
                     }
@@ -239,36 +239,36 @@ public final class Parser {
                 }
                 yield result;
             }
-            case NumberExpr numberExpr -> new Monomial(numberExpr.value, 0).polynomial();
+            case NumberToken numberExpr -> new Monomial(numberExpr.value, 0).polynomial();
             case VarExp varExp -> new Monomial(1, varExp.exp).polynomial();
             default -> throw new IllegalStateException(exprs.toString());
         };
     }
 
-    private static boolean isOperator(Expr expr) {
-        return switch (expr) {
-            case MinusExpr ignored -> true;
-            case MultExpr ignored -> true;
-            case PlusExpr ignored -> true;
+    private static boolean isOperator(Token token) {
+        return switch (token) {
+            case MinusToken ignored -> true;
+            case MultToken ignored -> true;
+            case PlusToken ignored -> true;
             default -> false;
         };
     }
 
-    private static boolean isPlus(Expr expr) {
-        return expr instanceof PlusExpr;
+    private static boolean isPlus(Token token) {
+        return token instanceof PlusToken;
     }
 
-    private static boolean isMinus(Expr expr) {
-        return expr instanceof MinusExpr;
+    private static boolean isMinus(Token token) {
+        return token instanceof MinusToken;
     }
 
-    public record MultListExpr(List<Expr> value) implements Expr {
-        public static MultListExpr create(int capacity) {
-            return new MultListExpr(new ArrayList<>(capacity));
+    public record MultListToken(List<Token> value) implements Token {
+        public static MultListToken create(int capacity) {
+            return new MultListToken(new ArrayList<>(capacity));
         }
 
-        public static MultListExpr of(Expr... value) {
-            return new MultListExpr(List.of(value));
+        public static MultListToken of(Token... value) {
+            return new MultListToken(List.of(value));
         }
 
         @Override
@@ -276,17 +276,17 @@ public final class Parser {
             return value.stream().map(Objects::toString).collect(Collectors.joining(" ", "(* ", ")"));
         }
 
-        public static MultListExpr of(int... value) {
-            List<Expr> list = IntStream.of(value).mapToObj(NumberExpr::of).map(s -> (Expr) s).toList();
-            return new MultListExpr(list);
+        public static MultListToken of(int... value) {
+            List<Token> list = IntStream.of(value).mapToObj(NumberToken::of).map(s -> (Token) s).toList();
+            return new MultListToken(list);
         }
 
-        public void add(Expr expr) {
-            addIfNotOperator(value, expr);
+        public void add(Token token) {
+            addIfNotOperator(value, token);
         }
 
-        public MultListExpr copy() {
-            return new MultListExpr(List.copyOf(value));
+        public MultListToken copy() {
+            return new MultListToken(List.copyOf(value));
         }
 
         public void clear() {
@@ -303,25 +303,25 @@ public final class Parser {
         }
 
         @Override
-        public Expr getFirst() {
+        public Token getFirst() {
             return value.getFirst();
         }
 
         @Override
-        public List<Expr> getExprs() {
+        public List<Token> getExprs() {
             return value;
         }
     }
 
-    private static void addIfNotOperator(List<Expr> exprs, Expr expr) {
-        if (!isOperator(expr)) {
-            exprs.add(expr);
+    private static void addIfNotOperator(List<Token> tokens, Token token) {
+        if (!isOperator(token)) {
+            tokens.add(token);
         }
     }
 
-    public record PlusListExpr(List<Expr> value) implements Expr {
-        public static PlusListExpr create(int capacity) {
-            return new PlusListExpr(new ArrayList<>(capacity));
+    public record PlusListToken(List<Token> value) implements Token {
+        public static PlusListToken create(int capacity) {
+            return new PlusListToken(new ArrayList<>(capacity));
         }
 
         @Override
@@ -329,12 +329,12 @@ public final class Parser {
             return value.stream().map(Objects::toString).collect(Collectors.joining(" ", "(+ ", ")"));
         }
 
-        public static PlusListExpr of(Expr... value) {
-            return new PlusListExpr(List.of(value));
+        public static PlusListToken of(Token... value) {
+            return new PlusListToken(List.of(value));
         }
 
-        public void add(Expr expr) {
-            addIfNotOperator(value, expr);
+        public void add(Token token) {
+            addIfNotOperator(value, token);
         }
 
         public boolean isEmpty() {
@@ -347,19 +347,19 @@ public final class Parser {
         }
 
         @Override
-        public Expr getFirst() {
+        public Token getFirst() {
             return value.getFirst();
         }
 
         @Override
-        public List<Expr> getExprs() {
+        public List<Token> getExprs() {
             return value;
         }
     }
 
-    public record ListExpr(List<Expr> value) implements Expr {
-        public static ListExpr of(Expr... value) {
-            return new ListExpr(List.of(value));
+    public record ListToken(List<Token> value) implements Token {
+        public static ListToken of(Token... value) {
+            return new ListToken(List.of(value));
         }
 
         @Override
@@ -368,19 +368,19 @@ public final class Parser {
         }
 
         @Override
-        public Expr getFirst() {
+        public Token getFirst() {
             return value.getFirst();
         }
 
         @Override
-        public List<Expr> getExprs() {
+        public List<Token> getExprs() {
             return value;
         }
     }
 
-    public record NumberExpr(int value) implements Expr {
-        public static NumberExpr of(int value) {
-            return new NumberExpr(value);
+    public record NumberToken(int value) implements Token {
+        public static NumberToken of(int value) {
+            return new NumberToken(value);
         }
 
         @Override
@@ -394,17 +394,17 @@ public final class Parser {
         }
 
         @Override
-        public Expr getFirst() {
+        public Token getFirst() {
             return this;
         }
 
         @Override
-        public List<Expr> getExprs() {
+        public List<Token> getExprs() {
             return List.of(this);
         }
     }
 
-    public record VarExp(String var, int exp) implements Expr {
+    public record VarExp(String var, int exp) implements Token {
         public static VarExp of(String var, int exp) {
             return new VarExp(var, exp);
         }
@@ -423,12 +423,12 @@ public final class Parser {
         }
 
         @Override
-        public Expr getFirst() {
+        public Token getFirst() {
             return this;
         }
 
         @Override
-        public List<Expr> getExprs() {
+        public List<Token> getExprs() {
             return List.of(this);
         }
     }

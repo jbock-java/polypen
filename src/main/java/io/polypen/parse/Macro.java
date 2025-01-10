@@ -1,13 +1,13 @@
 package io.polypen.parse;
 
-import io.polypen.parse.Parser.Expr;
-import io.polypen.parse.Parser.ListExpr;
-import io.polypen.parse.Parser.MinusExpr;
-import io.polypen.parse.Parser.MultExpr;
-import io.polypen.parse.Parser.MultListExpr;
-import io.polypen.parse.Parser.NumberExpr;
-import io.polypen.parse.Parser.PlusExpr;
-import io.polypen.parse.Parser.PlusListExpr;
+import io.polypen.parse.Parser.Token;
+import io.polypen.parse.Parser.ListToken;
+import io.polypen.parse.Parser.MinusToken;
+import io.polypen.parse.Parser.MultToken;
+import io.polypen.parse.Parser.MultListToken;
+import io.polypen.parse.Parser.NumberToken;
+import io.polypen.parse.Parser.PlusToken;
+import io.polypen.parse.Parser.PlusListToken;
 
 import java.util.List;
 
@@ -17,34 +17,34 @@ public class Macro {
     public static final int B_MINUSBOUND = 16;
     public static final int B_END = 1;
 
-    public static Expr applyStarMacro(List<Expr> exprs) {
-        if (exprs.size() == 1) {
-            return expandRecursively(exprs.getFirst());
+    public static Token applyStarMacro(List<Token> tokens) {
+        if (tokens.size() == 1) {
+            return expandRecursively(tokens.getFirst());
         }
-        PlusListExpr exprsCopy = PlusListExpr.create(exprs.size());
-        MultListExpr region = MultListExpr.create(exprs.size());
-        int[] bound = new int[exprs.size()];
-        for (int i = 0; i < exprs.size() - 1; i++) {
-            Expr left = exprs.get(i);
-            Expr right = exprs.get(i + 1);
+        PlusListToken exprsCopy = PlusListToken.create(tokens.size());
+        MultListToken region = MultListToken.create(tokens.size());
+        int[] bound = new int[tokens.size()];
+        for (int i = 0; i < tokens.size() - 1; i++) {
+            Token left = tokens.get(i);
+            Token right = tokens.get(i + 1);
             if (isStrong(left, right)) {
                 bound[i] |= B_STRONG;
                 bound[i + 1] |= B_STRONG;
-                if (left instanceof MinusExpr) {
+                if (left instanceof MinusToken) {
                     bound[i + 1] |= B_MINUSBOUND;
                 }
             } else if ((bound[i] & B_STRONG) != 0) {
                 bound[i] |= B_END;
             }
         }
-        for (int i = 0; i < exprs.size(); i++) {
-            Expr expr = exprs.get(i);
+        for (int i = 0; i < tokens.size(); i++) {
+            Token token = tokens.get(i);
             int b = bound[i];
             if ((b & B_STRONG) != 0) {
                 if ((b & B_MINUSBOUND) != 0) {
-                    region.add(MultListExpr.of(NumberExpr.of(-1), expandRecursively(expr)));
+                    region.add(MultListToken.of(NumberToken.of(-1), expandRecursively(token)));
                 } else {
-                    region.add(expandRecursively(expr));
+                    region.add(expandRecursively(token));
                 }
                 if ((b & B_END) != 0) {
                     exprsCopy.add(unwrap(region.copy()));
@@ -55,7 +55,7 @@ public class Macro {
                     exprsCopy.add(unwrap(region.copy()));
                     region.clear();
                 }
-                exprsCopy.add(expandRecursively(expr));
+                exprsCopy.add(expandRecursively(token));
             }
         }
         if (exprsCopy.isEmpty()) {
@@ -67,31 +67,31 @@ public class Macro {
         return exprsCopy;
     }
 
-    private static Expr unwrap(MultListExpr expr) {
+    private static Token unwrap(MultListToken expr) {
         return expr.size() == 1 ? expr.getFirst() : expr;
     }
 
-    private static Expr expandRecursively(Expr expr) {
-        if (expr == null) {
+    private static Token expandRecursively(Token token) {
+        if (token == null) {
             return null;
         }
-        return switch (expr) {
-            case ListExpr x -> applyStarMacro(x.value());
-            default -> expr;
+        return switch (token) {
+            case ListToken x -> applyStarMacro(x.value());
+            default -> token;
         };
     }
 
-    public static boolean isStrong(Expr left, Expr right) {
-        if (left instanceof MultExpr || right instanceof MultExpr) {
+    public static boolean isStrong(Token left, Token right) {
+        if (left instanceof MultToken || right instanceof MultToken) {
             return true;
         }
-        if (left instanceof PlusExpr || right instanceof PlusExpr) {
+        if (left instanceof PlusToken || right instanceof PlusToken) {
             return false;
         }
-        if (left instanceof MinusExpr) {
+        if (left instanceof MinusToken) {
             return true;
         }
-        if (right instanceof MinusExpr) {
+        if (right instanceof MinusToken) {
             return false;
         }
         return true;

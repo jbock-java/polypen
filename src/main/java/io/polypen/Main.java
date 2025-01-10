@@ -1,7 +1,7 @@
 package io.polypen;
 
 import io.polypen.parse.Parser;
-import io.polypen.parse.Parser.ListExpr;
+import io.polypen.parse.Parser.ListToken;
 
 import java.util.Scanner;
 
@@ -14,7 +14,7 @@ public class Main {
             String line = in.nextLine();
             sb.append(line);
         }
-        ListExpr expression = Parser.parse(sb.toString());
+        ListToken expression = Parser.parse(sb.toString());
         System.out.println(Parser.eval(expression));
     }
 }
