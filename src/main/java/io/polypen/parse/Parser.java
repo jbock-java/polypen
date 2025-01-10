@@ -56,12 +56,13 @@ public final class Parser {
         }
         reader.unread(c);
         if (Character.isDigit(c)) {
-            return readNumber(reader);
+            int value = readNumber(reader);
+            return VarExp.constant(value);
         }
         return readVarExp(reader);
     }
 
-    private static NumberToken readNumber(PushbackReader reader) throws IOException {
+    private static int readNumber(PushbackReader reader) throws IOException {
         StringBuilder sb = new StringBuilder();
         int c;
         while (Character.isDigit(c = reader.read())) {
@@ -70,28 +71,24 @@ public final class Parser {
         if (c != -1) {
             reader.unread(c);
         }
-        return new NumberToken(Integer.parseInt(sb.toString()));
+        return Integer.parseInt(sb.toString());
     }
 
     private static VarExp readVarExp(PushbackReader reader) throws IOException {
-        StringBuilder name = new StringBuilder();
         int c;
         while (true) {
             c = reader.read();
-            if (Character.isAlphabetic(c) || Character.isDigit(c) || c == '_') {
-                name.append((char) c);
-            } else {
+            if (!Character.isAlphabetic(c) && !Character.isDigit(c) && c != '_') {
                 break;
             }
         }
         if (c == '^') {
-            NumberToken expr = readNumber(reader);
-            return new VarExp(name.toString(), expr.value);
+            return VarExp.of(readNumber(reader));
         }
         if (c != -1) {
             reader.unread(c);
         }
-        return new VarExp(name.toString(), 1);
+        return VarExp.of(1);
     }
 
     private static void consumeWhitespace(PushbackReader reader) throws IOException {
@@ -114,7 +111,7 @@ public final class Parser {
         }
     }
 
-    public sealed interface Token permits PlusToken, MinusToken, MultToken, ListToken, NumberToken, VarExp, PlusListToken, MultListToken {
+    public sealed interface Token permits PlusToken, MinusToken, MultToken, ListToken, VarExp, PlusListToken, MultListToken {
         int size();
 
         Token getFirst();
@@ -194,7 +191,7 @@ public final class Parser {
 
     public static final Token MULT = new MultToken();
 
-    public static Polynomial eval(Token token) {
+    public static Polynomial eval(ListToken token) {
         Token exprs = Macro.applyStarMacro(token.getExprs());
         return _eval(exprs);
     }
@@ -239,8 +236,7 @@ public final class Parser {
                 }
                 yield result;
             }
-            case NumberToken numberExpr -> new Monomial(numberExpr.value, 0).polynomial();
-            case VarExp varExp -> new Monomial(1, varExp.exp).polynomial();
+            case VarExp varExp -> new Monomial(varExp.factor, varExp.exp).polynomial();
             default -> throw new IllegalStateException(exprs.toString());
         };
     }
@@ -277,7 +273,7 @@ public final class Parser {
         }
 
         public static MultListToken of(int... value) {
-            List<Token> list = IntStream.of(value).mapToObj(NumberToken::of).map(s -> (Token) s).toList();
+            List<Token> list = IntStream.of(value).mapToObj(value1 -> VarExp.constant(value1)).map(s -> (Token) s).toList();
             return new MultListToken(list);
         }
 
@@ -378,43 +374,24 @@ public final class Parser {
         }
     }
 
-    public record NumberToken(int value) implements Token {
-        public static NumberToken of(int value) {
-            return new NumberToken(value);
+    public record VarExp(int factor, int exp) implements Token {
+        public static VarExp constant(int factor) {
+            return new VarExp(factor, 0);
+        }
+
+        public static VarExp of(int exp) {
+            return new VarExp(1, exp);
         }
 
         @Override
         public String toString() {
-            return Integer.toString(value);
-        }
-
-        @Override
-        public int size() {
-            return 1;
-        }
-
-        @Override
-        public Token getFirst() {
-            return this;
-        }
-
-        @Override
-        public List<Token> getExprs() {
-            return List.of(this);
-        }
-    }
-
-    public record VarExp(String var, int exp) implements Token {
-        public static VarExp of(String var, int exp) {
-            return new VarExp(var, exp);
-        }
-
-        @Override
-        public String toString() {
-            if (exp == 1) {
-                return var;
+            if (exp == 0) {
+                return Integer.toString(factor);
             }
-            return var + "^" + exp;
+            if (exp == 1) {
+                return "x";
+            }
+            return "x^" + exp;
         }
 
         @Override

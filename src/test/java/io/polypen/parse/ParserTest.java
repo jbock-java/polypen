@@ -5,13 +5,12 @@ import io.polypen.Polynomial;
 import org.junit.jupiter.api.Test;
 
 import static io.polypen.parse.Macro.applyStarMacro;
-import static io.polypen.parse.Parser.Token;
 import static io.polypen.parse.Parser.ListToken;
 import static io.polypen.parse.Parser.MULT;
 import static io.polypen.parse.Parser.MultListToken;
-import static io.polypen.parse.Parser.NumberToken;
 import static io.polypen.parse.Parser.PLUS;
 import static io.polypen.parse.Parser.PlusListToken;
+import static io.polypen.parse.Parser.Token;
 import static io.polypen.parse.Parser.VarExp;
 import static io.polypen.parse.Parser.eval;
 import static io.polypen.parse.Parser.parse;
@@ -23,7 +22,7 @@ class ParserTest {
     void testParse() {
         ListToken result = parse("(a_1^12 + b12^2) * 2");
         assertEquals(ListToken.of(
-                        ListToken.of(VarExp.of("a_1", 12), PLUS, VarExp.of("b12", 2)), MULT, NumberToken.of(2)),
+                        ListToken.of(VarExp.of(12), PLUS, VarExp.of(2)), MULT, VarExp.constant(2)),
                 result);
     }
 
@@ -32,7 +31,7 @@ class ParserTest {
         ListToken result = parse("1 + 2 * 3");
         Token expanded = applyStarMacro(result.value());
         assertEquals(PlusListToken.of(
-                        NumberToken.of(1), MultListToken.of(NumberToken.of(2), NumberToken.of(3))),
+                        VarExp.constant(1), MultListToken.of(VarExp.constant(2), VarExp.constant(3))),
                 expanded);
     }
 
@@ -41,7 +40,7 @@ class ParserTest {
         ListToken result = parse("1 + 2 * 3 * 4");
         Token expanded = applyStarMacro(result.value());
         assertEquals(PlusListToken.of(
-                        NumberToken.of(1), MultListToken.of(NumberToken.of(2), NumberToken.of(3), NumberToken.of(4))),
+                        VarExp.constant(1), MultListToken.of(VarExp.constant(2), VarExp.constant(3), VarExp.constant(4))),
                 expanded);
     }
 
@@ -59,7 +58,7 @@ class ParserTest {
         ListToken result = parse("1 + 2 * 3 + 4");
         Token expanded = applyStarMacro(result.value());
         assertEquals(PlusListToken.of(
-                        NumberToken.of(1), MultListToken.of(2, 3), NumberToken.of(4)),
+                        VarExp.constant(1), MultListToken.of(2, 3), VarExp.constant(4)),
                 expanded);
     }
 
@@ -69,7 +68,7 @@ class ParserTest {
         Token expanded = applyStarMacro(result.value());
         assertEquals(
                 MultListToken.of(
-                        PlusListToken.of(NumberToken.of(1), NumberToken.of(2)), NumberToken.of(3)),
+                        PlusListToken.of(VarExp.constant(1), VarExp.constant(2)), VarExp.constant(3)),
                 expanded);
     }
 
@@ -79,7 +78,7 @@ class ParserTest {
         Token expanded = applyStarMacro(result.value());
         assertEquals(
                 MultListToken.of(
-                        NumberToken.of(1), NumberToken.of(2)),
+                        VarExp.constant(1), VarExp.constant(2)),
                 expanded);
     }
 
@@ -89,8 +88,8 @@ class ParserTest {
         Token expanded = applyStarMacro(result.getExprs());
         assertEquals(
                 MultListToken.of(
-                        NumberToken.of(-1),
-                        PlusListToken.of(VarExp.of("x", 1),
+                        VarExp.constant(-1),
+                        PlusListToken.of(VarExp.of(1),
                                 MultListToken.of(-1, 1))),
                 expanded);
     }
@@ -101,8 +100,8 @@ class ParserTest {
         Token expanded = applyStarMacro(result.value());
         assertEquals(
                 MultListToken.of(
-                        NumberToken.of(1),
-                        PlusListToken.of(NumberToken.of(2), NumberToken.of(3))),
+                        VarExp.constant(1),
+                        PlusListToken.of(VarExp.constant(2), VarExp.constant(3))),
                 expanded);
         Polynomial polynomial = eval(result);
         assertEquals(Monomial.constant(5).polynomial(), polynomial);

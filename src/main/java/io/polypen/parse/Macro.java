@@ -1,13 +1,13 @@
 package io.polypen.parse;
 
-import io.polypen.parse.Parser.Token;
 import io.polypen.parse.Parser.ListToken;
 import io.polypen.parse.Parser.MinusToken;
-import io.polypen.parse.Parser.MultToken;
 import io.polypen.parse.Parser.MultListToken;
-import io.polypen.parse.Parser.NumberToken;
-import io.polypen.parse.Parser.PlusToken;
+import io.polypen.parse.Parser.MultToken;
 import io.polypen.parse.Parser.PlusListToken;
+import io.polypen.parse.Parser.PlusToken;
+import io.polypen.parse.Parser.Token;
+import io.polypen.parse.Parser.VarExp;
 
 import java.util.List;
 
@@ -42,7 +42,7 @@ public class Macro {
             int b = bound[i];
             if ((b & B_STRONG) != 0) {
                 if ((b & B_MINUSBOUND) != 0) {
-                    region.add(MultListToken.of(NumberToken.of(-1), expandRecursively(token)));
+                    region.add(MultListToken.of(VarExp.constant(-1), expandRecursively(token)));
                 } else {
                     region.add(expandRecursively(token));
                 }
