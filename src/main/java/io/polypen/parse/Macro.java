@@ -17,9 +17,13 @@ public class Macro {
     public static final int B_MINUSBOUND = 16;
     public static final int B_END = 1;
 
-    public static Token applyStarMacro(List<Token> tokens) {
+    public static Token applyStarMacro(Token input) {
+        if (!(input instanceof ListToken)) {
+            return input;
+        }
+        List<Token> tokens = input.getExprs();
         if (tokens.size() == 1) {
-            return expandRecursively(tokens.getFirst());
+            return applyStarMacro(tokens.getFirst());
         }
         PlusListToken exprsCopy = PlusListToken.create(tokens.size());
         MultListToken region = MultListToken.create(tokens.size());
@@ -42,9 +46,9 @@ public class Macro {
             int b = bound[i];
             if ((b & B_STRONG) != 0) {
                 if ((b & B_MINUSBOUND) != 0) {
-                    region.add(MultListToken.of(VarExp.constant(-1), expandRecursively(token)));
+                    region.add(MultListToken.of(VarExp.constant(-1), applyStarMacro(token)));
                 } else {
-                    region.add(expandRecursively(token));
+                    region.add(applyStarMacro(token));
                 }
                 if ((b & B_END) != 0) {
                     exprsCopy.add(unwrap(region.copy()));
@@ -55,7 +59,7 @@ public class Macro {
                     exprsCopy.add(unwrap(region.copy()));
                     region.clear();
                 }
-                exprsCopy.add(expandRecursively(token));
+                exprsCopy.add(applyStarMacro(token));
             }
         }
         if (exprsCopy.isEmpty()) {
@@ -69,16 +73,6 @@ public class Macro {
 
     private static Token unwrap(MultListToken expr) {
         return expr.size() == 1 ? expr.getFirst() : expr;
-    }
-
-    private static Token expandRecursively(Token token) {
-        if (token == null) {
-            return null;
-        }
-        return switch (token) {
-            case ListToken x -> applyStarMacro(x.value());
-            default -> token;
-        };
     }
 
     public static boolean isStrong(Token left, Token right) {

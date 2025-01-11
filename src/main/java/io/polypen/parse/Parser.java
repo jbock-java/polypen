@@ -192,7 +192,7 @@ public final class Parser {
     public static final Token MULT = new MultToken();
 
     public static Polynomial eval(ListToken token) {
-        Token exprs = Macro.applyStarMacro(token.getExprs());
+        Token exprs = Macro.applyStarMacro(token);
         return _eval(exprs);
     }
 

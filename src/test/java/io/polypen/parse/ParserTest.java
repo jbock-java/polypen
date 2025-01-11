@@ -29,7 +29,7 @@ class ParserTest {
     @Test
     void starMacro1() {
         ListToken result = parse("1 + 2 * 3");
-        Token expanded = applyStarMacro(result.value());
+        Token expanded = applyStarMacro(result);
         assertEquals(PlusListToken.of(
                         VarExp.constant(1), MultListToken.of(VarExp.constant(2), VarExp.constant(3))),
                 expanded);
@@ -38,7 +38,7 @@ class ParserTest {
     @Test
     void starMacro5() {
         ListToken result = parse("1 + 2 * 3 * 4");
-        Token expanded = applyStarMacro(result.value());
+        Token expanded = applyStarMacro(result);
         assertEquals(PlusListToken.of(
                         VarExp.constant(1), MultListToken.of(VarExp.constant(2), VarExp.constant(3), VarExp.constant(4))),
                 expanded);
@@ -47,7 +47,7 @@ class ParserTest {
     @Test
     void starMacro6() {
         ListToken result = parse("2 * 3 * 4");
-        Token expanded = applyStarMacro(result.value());
+        Token expanded = applyStarMacro(result);
         assertEquals(
                 MultListToken.of(2, 3, 4),
                 expanded);
@@ -56,7 +56,7 @@ class ParserTest {
     @Test
     void starMacro2() {
         ListToken result = parse("1 + 2 * 3 + 4");
-        Token expanded = applyStarMacro(result.value());
+        Token expanded = applyStarMacro(result);
         assertEquals(PlusListToken.of(
                         VarExp.constant(1), MultListToken.of(2, 3), VarExp.constant(4)),
                 expanded);
@@ -65,7 +65,7 @@ class ParserTest {
     @Test
     void starMacro3() {
         ListToken result = parse("(1 + 2) * 3");
-        Token expanded = applyStarMacro(result.value());
+        Token expanded = applyStarMacro(result);
         assertEquals(
                 MultListToken.of(
                         PlusListToken.of(VarExp.constant(1), VarExp.constant(2)), VarExp.constant(3)),
@@ -75,7 +75,7 @@ class ParserTest {
     @Test
     void starMacro7() {
         ListToken result = parse("1 * 2");
-        Token expanded = applyStarMacro(result.value());
+        Token expanded = applyStarMacro(result);
         assertEquals(
                 MultListToken.of(
                         VarExp.constant(1), VarExp.constant(2)),
@@ -85,7 +85,7 @@ class ParserTest {
     @Test
     void starMacro8() {
         ListToken result = parse("-(x - 1)");
-        Token expanded = applyStarMacro(result.getExprs());
+        Token expanded = applyStarMacro(result);
         assertEquals(
                 MultListToken.of(
                         VarExp.constant(-1),
@@ -97,7 +97,7 @@ class ParserTest {
     @Test
     void starMacro4() {
         ListToken result = parse("1 * (2 + 3)");
-        Token expanded = applyStarMacro(result.value());
+        Token expanded = applyStarMacro(result);
         assertEquals(
                 MultListToken.of(
                         VarExp.constant(1),

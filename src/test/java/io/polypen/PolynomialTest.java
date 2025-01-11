@@ -44,7 +44,7 @@ class PolynomialTest {
     @Test
     void monomialMultiplication2() {
         ListToken p = Parser.parse("2x - 1");
-        List<Parser.Token> tokens = Macro.applyStarMacro(p.getExprs()).getExprs();
+        List<Parser.Token> tokens = Macro.applyStarMacro(p).getExprs();
         for (int i = 0; i < tokens.size(); i++) {
             Parser.Token token = tokens.get(i);
             System.out.println(i + ": " + token);
