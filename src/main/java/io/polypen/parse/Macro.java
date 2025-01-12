@@ -1,15 +1,17 @@
 package io.polypen.parse;
 
+import io.polypen.parse.Parser.HeadToken;
 import io.polypen.parse.Parser.ListToken;
 import io.polypen.parse.Parser.MinusToken;
-import io.polypen.parse.Parser.MultListToken;
 import io.polypen.parse.Parser.MultToken;
-import io.polypen.parse.Parser.PlusListToken;
 import io.polypen.parse.Parser.PlusToken;
 import io.polypen.parse.Parser.Token;
 import io.polypen.parse.Parser.VarExp;
 
 import java.util.List;
+
+import static io.polypen.parse.Parser.HeadToken.createMult;
+import static io.polypen.parse.Parser.HeadToken.createPlus;
 
 public class Macro {
 
@@ -25,8 +27,8 @@ public class Macro {
         if (tokens.size() == 1) {
             return applyStarMacro(tokens.getFirst());
         }
-        PlusListToken exprsCopy = PlusListToken.create(tokens.size());
-        MultListToken region = MultListToken.create(tokens.size());
+        HeadToken exprsCopy = createPlus(tokens.size());
+        HeadToken region = createMult(tokens.size());
         int[] bound = new int[tokens.size()];
         for (int i = 0; i < tokens.size() - 1; i++) {
             Token left = tokens.get(i);
@@ -46,7 +48,7 @@ public class Macro {
             int b = bound[i];
             if ((b & B_STRONG) != 0) {
                 if ((b & B_MINUSBOUND) != 0) {
-                    region.add(MultListToken.of(VarExp.constant(-1), applyStarMacro(token)));
+                    region.add(HeadToken.ofMult(VarExp.constant(-1), applyStarMacro(token)));
                 } else {
                     region.add(applyStarMacro(token));
                 }
@@ -71,7 +73,7 @@ public class Macro {
         return exprsCopy;
     }
 
-    private static Token unwrap(MultListToken expr) {
+    private static Token unwrap(HeadToken expr) {
         return expr.size() == 1 ? expr.getFirst() : expr;
     }
 

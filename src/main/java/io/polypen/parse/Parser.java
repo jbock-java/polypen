@@ -8,10 +8,15 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PushbackReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+
+import static io.polypen.Polynomial.ONE;
+import static io.polypen.Polynomial.ZERO;
+import static io.polypen.parse.Parser.Symbol.M;
+import static io.polypen.parse.Parser.Symbol.P;
 
 public final class Parser {
 
@@ -111,7 +116,7 @@ public final class Parser {
         }
     }
 
-    public sealed interface Token permits PlusToken, MinusToken, MultToken, ListToken, VarExp, PlusListToken, MultListToken {
+    public sealed interface Token permits PlusToken, MinusToken, MultToken, ListToken, VarExp, HeadToken {
         int size();
 
         Token getFirst();
@@ -198,43 +203,26 @@ public final class Parser {
 
     private static Polynomial _eval(Token exprs) {
         return switch (exprs) {
-            case PlusListToken listExpr -> {
+            case HeadToken listExpr -> {
                 if (listExpr.value.size() == 1) {
                     yield _eval(listExpr.value().getFirst());
                 }
-                if (exprs.size() == 1) {
-                    yield _eval(exprs.getFirst());
-                }
-                Polynomial result = Polynomial.ZERO;
-                for (Token exp : exprs.getExprs()) {
-                    if (isMinus(exp)) {
-                        continue;
+                yield switch (listExpr.head) {
+                    case P -> {
+                        Polynomial result = ZERO;
+                        for (Token exp : exprs.getExprs()) {
+                            result = result.add(_eval(exp));
+                        }
+                        yield result;
                     }
-                    if (isPlus(exp)) {
-                        continue;
+                    case M -> {
+                        Polynomial result = ONE;
+                        for (Token exp : exprs.getExprs()) {
+                            result = result.multiply(_eval(exp));
+                        }
+                        yield result;
                     }
-                    Polynomial p = _eval(exp);
-                    result = result.add(p);
-                }
-                yield result;
-            }
-            case MultListToken listExpr -> {
-                if (listExpr.value.size() == 1) {
-                    yield _eval(listExpr.value().getFirst());
-                }
-                if (exprs.size() == 1) {
-                    yield _eval(exprs.getFirst());
-                }
-                Polynomial result;
-                result = Polynomial.ONE;
-                for (Token exp : exprs.getExprs()) {
-                    if (isOperator(exp)) {
-                        continue;
-                    }
-                    Polynomial p = _eval(exp);
-                    result = result.multiply(p);
-                }
-                yield result;
+                };
             }
             case VarExp varExp -> new Monomial(varExp.factor, varExp.exp).polynomial();
             default -> throw new IllegalStateException(exprs.toString());
@@ -258,75 +246,50 @@ public final class Parser {
         return token instanceof MinusToken;
     }
 
-    public record MultListToken(List<Token> value) implements Token {
-        public static MultListToken create(int capacity) {
-            return new MultListToken(new ArrayList<>(capacity));
-        }
-
-        public static MultListToken of(Token... value) {
-            return new MultListToken(List.of(value));
-        }
-
-        @Override
-        public String toString() {
-            return value.stream().map(Objects::toString).collect(Collectors.joining(" ", "(* ", ")"));
-        }
-
-        public static MultListToken of(int... value) {
-            List<Token> list = IntStream.of(value).mapToObj(value1 -> VarExp.constant(value1)).map(s -> (Token) s).toList();
-            return new MultListToken(list);
-        }
-
-        public void add(Token token) {
-            addIfNotOperator(value, token);
-        }
-
-        public MultListToken copy() {
-            return new MultListToken(List.copyOf(value));
-        }
-
-        public void clear() {
-            value.clear();
-        }
-
-        public boolean isEmpty() {
-            return value.isEmpty();
-        }
-
-        @Override
-        public int size() {
-            return value().size();
-        }
-
-        @Override
-        public Token getFirst() {
-            return value.getFirst();
-        }
-
-        @Override
-        public List<Token> getExprs() {
-            return value;
-        }
-    }
-
     private static void addIfNotOperator(List<Token> tokens, Token token) {
         if (!isOperator(token)) {
             tokens.add(token);
         }
     }
 
-    public record PlusListToken(List<Token> value) implements Token {
-        public static PlusListToken create(int capacity) {
-            return new PlusListToken(new ArrayList<>(capacity));
+    enum Symbol {
+        P('+'), M('*');
+        final char c;
+
+        Symbol(char c) {
+            this.c = c;
         }
 
         @Override
         public String toString() {
-            return value.stream().map(Objects::toString).collect(Collectors.joining(" ", "(+ ", ")"));
+            return Character.toString(c);
+        }
+    }
+
+    public record HeadToken(Symbol head, List<Token> value) implements Token {
+        public static HeadToken createPlus(int capacity) {
+            return new HeadToken(P, new ArrayList<>(capacity));
         }
 
-        public static PlusListToken of(Token... value) {
-            return new PlusListToken(List.of(value));
+        public static HeadToken createMult(int capacity) {
+            return new HeadToken(M, new ArrayList<>(capacity));
+        }
+
+        @Override
+        public String toString() {
+            return value.stream().map(Objects::toString).collect(Collectors.joining(" ", "(" + head + " ", ")"));
+        }
+
+        public static HeadToken ofPlus(Token... value) {
+            return new HeadToken(P, List.of(value));
+        }
+
+        public static HeadToken ofMult(Token... value) {
+            return new HeadToken(M, List.of(value));
+        }
+
+        public static HeadToken ofMult(int... value) {
+            return new HeadToken(M, Arrays.stream(value).mapToObj(VarExp::constant).map(t -> (Token) t).toList());
         }
 
         public void add(Token token) {
@@ -350,6 +313,14 @@ public final class Parser {
         @Override
         public List<Token> getExprs() {
             return value;
+        }
+
+        void clear() {
+            value.clear();
+        }
+
+        HeadToken copy() {
+            return new HeadToken(head, List.copyOf(value));
         }
     }
 
