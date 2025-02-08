@@ -77,19 +77,48 @@ public class Macro {
         return expr.size() == 1 ? expr.getFirst() : expr;
     }
 
-    public static boolean isStrong(Token left, Token right) {
-        if (left instanceof MultToken || right instanceof MultToken) {
-            return true;
+    enum Troolean {
+        TRUE(true), FALSE(false), DONT_CARE(true),
+        ;
+        final boolean b;
+
+        Troolean(boolean b) {
+            this.b = b;
         }
-        if (left instanceof PlusToken || right instanceof PlusToken) {
-            return false;
+    }
+
+    private static Troolean isRightStrong(Token right) {
+        if (right instanceof MultToken) {
+            return Troolean.TRUE;
         }
-        if (left instanceof MinusToken) {
-            return true;
+        if (right instanceof PlusToken) {
+            return Troolean.FALSE;
         }
         if (right instanceof MinusToken) {
-            return false;
+            return Troolean.FALSE;
         }
-        return true;
+        return Troolean.DONT_CARE;
+    }
+
+    private static Troolean isLeftStrong(Token left) {
+        if (left instanceof MultToken) {
+            return Troolean.TRUE;
+        }
+        if (left instanceof PlusToken) {
+            return Troolean.FALSE;
+        }
+        if (left instanceof MinusToken) {
+            return Troolean.TRUE;
+        }
+        return Troolean.DONT_CARE;
+    }
+
+    public static boolean isStrong(Token left, Token right) {
+        Troolean l = isLeftStrong(left);
+        if (l != Troolean.DONT_CARE) {
+            return l.b;
+        }
+        Troolean r = isRightStrong(right);
+        return r.b;
     }
 }

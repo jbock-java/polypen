@@ -10,3 +10,4 @@ build
 /examples/out
 /gradle.properties
 /dependencies
+*.swp
