@@ -46,22 +46,20 @@ public class Macro {
         for (int i = 0; i < tokens.size(); i++) {
             Token token = tokens.get(i);
             int b = bound[i];
+            Token transformed = applyStarMacro(token);
             if ((b & B_STRONG) != 0) {
                 if ((b & B_MINUSBOUND) != 0) {
-                    region.add(HeadToken.ofMult(VarExp.constant(-1), applyStarMacro(token)));
+                    HeadToken neg = HeadToken.ofMult(VarExp.constant(-1), transformed);
+                    region.add(neg);
                 } else {
-                    region.add(applyStarMacro(token));
+                    region.add(transformed);
                 }
                 if ((b & B_END) != 0) {
                     exprsCopy.add(unwrap(region.copy()));
                     region.clear();
                 }
             } else {
-                if (!region.isEmpty()) {
-                    exprsCopy.add(unwrap(region.copy()));
-                    region.clear();
-                }
-                exprsCopy.add(applyStarMacro(token));
+                exprsCopy.add(transformed);
             }
         }
         if (exprsCopy.isEmpty()) {
